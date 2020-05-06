@@ -1,10 +1,12 @@
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
 
 class Config:
     def __init__(self):
-        self.max_disparity = os.getenv('MAX_DISPARITY')
+        env_path = Path('.') / '.env'
+        load_dotenv(dotenv_path=env_path)
 
         self.penalty_equal_1 = os.getenv('PENALTY_EQUAL_1')
         self.penalty_bigger_than_1 = os.getenv('PENALTY_BIGGER_THEN_1')
@@ -14,7 +16,7 @@ class Config:
 
         self.patch_height = os.getenv('PATCH_HEIGHT')
         self.patch_width = os.getenv('PATCH_WIDTH')
-        self.heght_stride = os.getenv('HEIGHT_STRIDE')
+        self.height_stride = os.getenv('HEIGHT_STRIDE')
         self.width_stride = os.getenv('WIDTH_STRIDE')
         self.channel_number = os.getenv('CHANNEL_NUMBER')
 
@@ -22,3 +24,11 @@ class Config:
 
         self.train_correct = os.getenv('TRAIN_CORRECT')
         self.train_incorrect = os.getenv('TRAIN_INCORRECT')
+
+        self.seed = os.getenv('SEED')
+
+        self.dataset_train = os.getenv('DATASET_TRAIN')
+        self.dataset_test = os.getenv('DATASET_TEST')
+
+        self.epochs_number = os.getenv('EPOCHS_NUMBER')
+        self.batch_size = os.getenv('BATCH_SIZE')

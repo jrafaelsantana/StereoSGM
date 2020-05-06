@@ -2,7 +2,7 @@ from numpy import zeros, pad, uint8, uint64
 from cv2 import normalize, NORM_MINMAX
 
 
-def normalize_image(image):
+def normalize_image(image, max_disparity):
     """
     Normalize image
 
@@ -10,7 +10,9 @@ def normalize_image(image):
 
     :return: Image normalized
     """
-    return normalize(image, dst=None, alpha=0, beta=255, norm_type=NORM_MINMAX).astype(uint8)
+
+    # return normalize(image, dst=None, alpha=0, beta=255, norm_type=NORM_MINMAX, dtype=uint8)
+    return 255.0 * image / max_disparity
 
 
 def census_transformation(image, census_kernel_height, census_kernel_width):
