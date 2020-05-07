@@ -81,8 +81,7 @@ def census_transformation(image, census_kernel):
     return census
 
 
-def median_filter(left, right, blur_size):
-    left = medianBlur(left, blur_size)
-    right = medianBlur(right, blur_size)
+def median_filter(image, blur_size):
+    image = medianBlur(image, blur_size)
 
-    return left, right
+    return image

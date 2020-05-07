@@ -51,39 +51,11 @@ def generate_patches_training(
         print('Processing ' + directory.name)
         total = 0
 
-        # Census transformation
         left = cv2.imread(directory._str + '/im0.png', 0)
         right = cv2.imread(directory._str + '/im1.png', 0)
 
-        left, right = blur_image(left, right, blur_size)
-
-        height = left.shape[0]
-        width = left.shape[1]
-
-        img_left = np.zeros(shape=(height, width), dtype=np.float64)
-        img_right = np.zeros(shape=(height, width), dtype=np.float64)
-
-        img_left = census_transformation(left, census_kernel)
-        img_right = census_transformation(right, census_kernel)
-
-        img_left = img_left.astype(np.float32)
-        img_right = img_right.astype(np.float32)
-
-        # image = cv2.imread(directory._str + '/im0.png')
-        # image = image.astype(np.float32)
-        # img_left = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # mean_left = np.mean(img_left)
-        # var_left = np.std(img_left)
-        # img_left_d = (img_left - mean_left)/var_left
-
-        # image = cv2.imread(directory._str + '/im1.png')
-        # image = image.astype(np.float32)
-        # img_right = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # mean_right = np.mean(img_right)
-        # var_right = np.std(img_right)
-        # img_right_d = (img_right - mean_right)/var_right
+        img_left = left.astype(np.float32)
+        img_right = right.astype(np.float32)
 
         pfm_data = load_pfm(directory._str + '/disp0GT.pfm')
         mask = cv2.imread(directory._str + '/mask0nocc.png', 0)

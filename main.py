@@ -3,12 +3,19 @@ import utils
 import config
 import utils
 import evaluate
+import models
 
 import numpy as np
 from pathlib import Path
+import torch
+import os
+import cv2
 
 settings = config.Config()
+torch.manual_seed(int(settings.seed))
 
+USE_CUDA = int(settings.use_cuda)
+DEVICE = torch.device('cuda' if USE_CUDA else 'cpu')
 PATCH_WIDTH = int(settings.patch_width)
 PATCH_HEIGHT = int(settings.patch_height)
 DH = int(settings.height_stride)
@@ -23,6 +30,8 @@ BLUR_SIZE = int(settings.blur_size)
 PENALTY_EQUAL_1 = int(settings.penalty_equal_1)
 PENALTY_BIGGER_THEN_1 = int(settings.penalty_bigger_than_1)
 
+weight_path = 'weights/trainedweight.pth'
+
 
 """
     Semi-global matching
@@ -36,13 +45,12 @@ PENALTY_BIGGER_THEN_1 = int(settings.penalty_bigger_than_1)
 """
 
 
-def compute_costs(left, right, kernel_size, max_disparity):
+def compute_costs(left, right, max_disparity, patch_height, patch_width, channel_number, device):
     """
     Matching cost based on census transform and hamming distance.
 
     :param left: Left image.
     :param right: Right image.
-    :param kernel_size: Dictionary with height and width of census kernel size.
     :param max_disparity: Maximum disparity.
 
     :return: An array [H, W, D] with the matching costs (Height, width and disparity).
@@ -50,36 +58,38 @@ def compute_costs(left, right, kernel_size, max_disparity):
 
     print('Computing costs...')
 
+    net = models.Siamese().to(device)
+
+    if os.path.exists(weight_path):
+        net.load_state_dict(torch.load(weight_path))
+    else:
+        print('Weights not found')
+
+    net.eval()
+
+    left = torch.tensor(left).to(device)
+    right = torch.tensor(right).to(device)
+
     height = left.shape[0]
     width = left.shape[1]
+    c = int(patch_height/2)
 
-    y_offset = int(kernel_size / 2)
-    x_offset = int(kernel_size / 2)
+    costs = torch.zeros((height, width, max_disparity),
+                        dtype=torch.float32).to(device)
 
-    left_census_values = np.zeros(shape=(height, width), dtype=np.uint64)
-    right_census_values = np.zeros(shape=(height, width), dtype=np.uint64)
+    for y in range(max_disparity, height - max_disparity - 1):
 
-    # Census transformation
+        print('Y': y)
 
-    print('\tApplying census transform...')
+        for x in range(max_disparity, width - max_disparity - 1):
+            for nd in range(0, max_disparity):
 
-    left_census_values = utils.census_transformation(left, kernel_size)
-    right_census_values = utils.census_transformation(right, kernel_size)
+                window_l = (left[y-c: y+c+1, x-c: x+c+1])
+                window_r = (right[y-c: y+c+1, x-c-nd: x+c+nd+1])
 
-    # CNN
-
-    print('\tCalculating costs...')
-
-    left_cost = np.zeros(
-        shape=(height, width, max_disparity))
-    right_cost = np.zeros(
-        shape=(height, width, max_disparity))
-
-    # TODO: Chamar CNN aqui
-    # left_cost, right_cost = utils.hamming_distance(
-    #     left_census_values, right_census_values, max_disparity, x_offset, y_offset)
-
-    return left_cost, right_cost
+                output = net(window_l, window_r)
+                print(output)
+                input()
 
 
 def compute_aggregation(cost, paths, p1, p2):
@@ -191,24 +201,18 @@ def sgm(directory):
 
     left, right = utils.load_images(
         directory._str + '/im0.png', directory._str + '/im1.png')
-    left, right = utils.blur_image(left, right, BLUR_SIZE)
 
-    left_cost, right_cost = compute_costs(
-        left, right, CENSUS_KERNEL, max_disparity)
+    costs = compute_costs(left, right, max_disparity,
+                          PATCH_HEIGHT, PATCH_WIDTH, CHANNEL_NUMBER, DEVICE)
 
-    left_aggregation = compute_aggregation(
-        left_cost, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
-    right_aggregation = compute_aggregation(
-        right_cost, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
+    aggregation = compute_aggregation(
+        costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
 
-    left_disparity = select_best_disparity(left_aggregation, max_disparity)
-    right_disparity = select_best_disparity(right_aggregation, max_disparity)
+    left_disparity = select_best_disparity(aggregation, max_disparity)
 
-    left_disparity, right_disparity = utils.median_filter(
-        left_disparity, right_disparity, BLUR_SIZE)
+    best_disp = utils.median_filter(best_disp, BLUR_SIZE)
 
-    utils.saveDisparity(left_disparity, 'left.png')
-    utils.saveDisparity(right_disparity, 'right.png')
+    utils.saveDisparity(best_disp, 'disp.png')
 
 
 if __name__ == "__main__":
