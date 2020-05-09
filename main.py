@@ -10,6 +10,7 @@ from pathlib import Path
 import torch
 import os
 import cv2
+import math
 
 settings = config.Config()
 torch.manual_seed(int(settings.seed))
@@ -67,8 +68,8 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
     net.eval()
 
-    left = torch.tensor(left).to(device)
-    right = torch.tensor(right).to(device)
+    left = torch.tensor(left, dtype=torch.float32).to(device)
+    right = torch.tensor(right, dtype=torch.float32).to(device)
 
     height = left.shape[0]
     width = left.shape[1]
@@ -77,19 +78,33 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
     costs = torch.zeros((height, width, max_disparity),
                         dtype=torch.float32).to(device)
 
-    for y in range(max_disparity, height - max_disparity - 1):
+    with torch.no_grad():
+        for y in range(c, height - c - 1):
 
-        print('Y': y)
+            print('Y ' + str(y))
 
-        for x in range(max_disparity, width - max_disparity - 1):
-            for nd in range(0, max_disparity):
+            for x in range(max_disparity, width - max_disparity - 1):
+                windows_l = (left[y-c : y+c+1, x-c : x+c+1])
+                windows_l = windows_l.repeat(max_disparity, 1, 1)
+                windows_l = windows_l.view([max_disparity, channel_number, patch_height, patch_width])
 
-                window_l = (left[y-c: y+c+1, x-c: x+c+1])
-                window_r = (right[y-c: y+c+1, x-c-nd: x+c+nd+1])
+                windows_r = torch.zeros(max_disparity, channel_number, patch_height, patch_width).to(device)
 
-                output = net(window_l, window_r)
-                print(output)
-                input()
+                for nd in range(1, max_disparity):
+                    start_x = x-nd-c
+                    end_x = x-nd+c+1
+
+                    if start_x >= 0:
+                        windows_r[nd-1,0] = (right[y-c : y+c+1, x-nd-c : x-nd+c+1])
+                    
+                output = net(windows_l, windows_r)
+                output = torch.flatten(output)
+
+                costs[y, x, :] = output
+    
+    costs = costs.cpu().numpy()
+
+    return costs
 
 
 def compute_aggregation(cost, paths, p1, p2):
@@ -208,7 +223,7 @@ def sgm(directory):
     aggregation = compute_aggregation(
         costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
 
-    left_disparity = select_best_disparity(aggregation, max_disparity)
+    best_disp = select_best_disparity(aggregation, max_disparity)
 
     best_disp = utils.median_filter(best_disp, BLUR_SIZE)
 

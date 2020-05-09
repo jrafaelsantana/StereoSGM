@@ -50,13 +50,12 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     smaller_error = 1000000
     loss_val = 0
 
-    pair_list = torch.FloatTensor(pair_list).to(device)
-    points_train = points_train.to(device)
-    points_valid = points_valid.to(device)
+    pair_list = torch.tensor(pair_list).to(device)
+    points_train = torch.tensor(points_train).to(device)
+    points_valid = torch.tensor(points_valid).to(device)
 
-    points_split = torch.split(points_train, batch_size, dim=0).to(device)
-    points_valid_split = torch.split(
-        points_valid, batch_size, dim=0).to(device)
+    points_split = torch.split(points_train, batch_size, dim=0)
+    points_valid_split = torch.split(points_valid, batch_size, dim=0)
 
     # TRAIN
     for epoch in range(0, epochs_number):
@@ -149,8 +148,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     target = np.linspace(1.0, 1.0, num=batch_temp)
                     target = torch.from_numpy(target).float().to(device)
 
-                    patch_sample = random.sample(
-                        range(0, batch_temp, 1), int(batch_temp))
+                    patch_sample = random.sample(range(0, batch_temp, 1), int(batch_temp))
                     patch_order = 1
 
                     for patch_id in range(0, batch_temp):
