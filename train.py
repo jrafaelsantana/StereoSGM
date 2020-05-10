@@ -50,7 +50,26 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     smaller_error = 1000000
     loss_val = 0
 
-    pair_list = torch.tensor(pair_list).to(device)
+    max_rows = max([len(rows) for image in pair_list for rows in image])
+    max_cols = max([len(cols) for image in pair_list for rows in image for cols in rows])
+
+    print(max_rows)
+    print(max_cols)
+
+    pair_list_temp = np.zeros((len(pair_list), 2, max_rows, max_cols))
+
+    for index, pair in enumerate(pair_list):
+        height = max([len(rows) for rows in pair])
+        width = max([len(cols) for rows in pair for cols in rows])
+
+        pair_list_temp[index, 0, 0:height, 0:width] = pair[0]
+        pair_list_temp[index, 1, 0:height, 0:width] = pair[1]
+
+        teste_left = np.asarray(pair_list_temp[index, 0], dtype=np.uint8)
+        teste_right = np.asarray(pair_list_temp[index, 1], dtype=np.uint8)
+
+
+    pair_list = torch.tensor(pair_list_temp).to(device)
     points_train = torch.tensor(points_train).to(device)
     points_valid = torch.tensor(points_valid).to(device)
 
@@ -98,14 +117,10 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                 images1 = pair_list[img_idx][0]
                 images2 = pair_list[img_idx][1]
 
-                images1_batch[2*patch_id+patch_order][0] = images1[i -
-                                                                   center_height:i+center_height+1, j-center_height:j+center_height+1]
-                images2_batch[2*patch_id+patch_order][0] = images2[i-center_height:i +
-                                                                   center_height+1, j + pos_d - center_height:j + pos_d + center_height + 1]
-                images1_batch[2*patch_id+1-patch_order][0] = images1[i -
-                                                                     center_height:i+center_height+1, j-center_height:j+center_height+1]
-                images2_batch[2*patch_id+1-patch_order][0] = images2[i-center_height:i +
-                                                                     center_height+1, j + neg_d - center_height: j + neg_d + center_height + 1]
+                images1_batch[2*patch_id+patch_order][0] = images1[i-center_height : i+center_height+1, j-center_height : j+center_height+1]
+                images2_batch[2*patch_id+patch_order][0] = images2[i-center_height : i+center_height+1, j + pos_d - center_height : j + pos_d + center_height + 1]
+                images1_batch[2*patch_id+1-patch_order][0] = images1[i-center_height : i+center_height+1, j-center_height : j+center_height+1]
+                images2_batch[2*patch_id+1-patch_order][0] = images2[i-center_height: i+center_height+1, j + neg_d - center_height : j + neg_d + center_height + 1]
 
                 target[patch_id] = -1.0 + 2*patch_order
 
