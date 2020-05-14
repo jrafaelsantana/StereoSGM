@@ -72,36 +72,26 @@ def generate_patches_training(
             start_x = j-center_height
 
             if start_x >=0: 
-                pair1Temp = img_left[i-center_height : i+center_height+1, j-center_height : j+center_height+1]
-                pair1TempValid = pair1Temp[pair1Temp == 255]
-                pair1TempVar = np.std(pair1Temp)
+                if(i > center_height and i < img_left.shape[0] - center_height and j > (center_height) and j < img_left.shape[1] - center_width):
+                    d = pfm_data[i, j]
+                    valid = mask[i, j]
 
-                if(pair1TempVar > 30):
-                    if(i > center_height and i < img_left.shape[0] - center_height and j > (center_height) and j < img_left.shape[1] - center_width):
-                        d = pfm_data[i, j]
-                        valid = mask[i, j]
+                    if not np.isinf(d) and valid != 255:
+                        d_r = int(np.round(d))
+                        if((j - d_r - dataset_pos - center_width) >= 0 and (j - d_r - dataset_neg_high - center_width) >= 0 and (j - d_r + dataset_pos + center_width) < img_left.shape[1] and (j - d_r + dataset_neg_high + center_width) < img_left.shape[1]):
+                            dataset_neg_high = int(dataset_neg_high)
 
-                        if not np.isinf(d) and valid != 255:
-                            d_r = int(np.round(d))
-                            if((j - d_r - dataset_pos - center_width) >= 0 and (j - d_r - dataset_neg_high - center_width) >= 0 and (j - d_r + dataset_pos + center_width) < img_left.shape[1] and (j - d_r + dataset_neg_high + center_width) < img_left.shape[1]):
-                                dataset_neg_high = int(dataset_neg_high)
+                            d_I = -dataset_neg_high
 
-                                desvio_alto = True
-                                d_I = -dataset_neg_high
+                            while(d_I < dataset_neg_high):
+                                pair2Temp = img_right[i-center_height:i+center_height +
+                                                    1, j-center_height-d_r+d_I:j+center_height+1-d_r+d_I]
+                                d_I = d_I + 1
+                                pair2TempValid = pair2Temp[pair2Temp == 255]
+                                pair2TempVar = np.std(pair2Temp)
 
-                                while(desvio_alto and d_I < dataset_neg_high):
-                                    pair2Temp = img_right[i-center_height:i+center_height +
-                                                        1, j-center_height-d_r+d_I:j+center_height+1-d_r+d_I]
-                                    d_I = d_I + 1
-                                    pair2TempValid = pair2Temp[pair2Temp == 255]
-                                    pair2TempVar = np.std(pair2Temp)
-
-                                    if(pair2TempVar <= 30):
-                                        desvio_alto = False
-
-                                if(desvio_alto == True):
-                                    points.append((i, j, d, index_pair))
-                                    total = total + 1
+                            points.append((i, j, d, index_pair))
+                            total = total + 1
 
                 sample_index = sample_index + 1
             else:

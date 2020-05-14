@@ -53,9 +53,6 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     max_rows = max([len(rows) for image in pair_list for rows in image])
     max_cols = max([len(cols) for image in pair_list for rows in image for cols in rows])
 
-    print(max_rows)
-    print(max_cols)
-
     pair_list_temp = np.zeros((len(pair_list), 2, max_rows, max_cols))
 
     for index, pair in enumerate(pair_list):
