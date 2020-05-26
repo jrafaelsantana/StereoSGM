@@ -36,6 +36,7 @@ def generate_patches_training(
     qt_correct,
     census_kernel,
     blur_size,
+    channel_number=1,
     dataset_neg_high=20.0,
     dataset_pos=0.5
 ):
@@ -51,11 +52,15 @@ def generate_patches_training(
         print('Processing ' + directory.name)
         total = 0
 
-        left = cv2.imread(directory._str + '/im0.png', 0)
-        right = cv2.imread(directory._str + '/im1.png', 0)
+        if channel_number == 3:
+            left = cv2.imread(directory._str + '/im0.png')
+            right = cv2.imread(directory._str + '/im1.png')
+        else:
+            left = cv2.imread(directory._str + '/im0.png', 0)
+            right = cv2.imread(directory._str + '/im1.png', 0)
 
-        img_left = left.astype(np.float32)
-        img_right = right.astype(np.float32)
+        img_left = left.astype(np.int8)
+        img_right = right.astype(np.int8)
 
         # mean_left = np.mean(img_left)
         # var_left = np.std(img_left)
@@ -107,6 +112,7 @@ def generate_patches_training(
 
         index_pair = index_pair + 1
         #pairs_list.append((img_left_d, img_right_d))
+
         pairs_list.append((img_left, img_right))
 
     return points, pairs_list
@@ -121,7 +127,8 @@ if __name__ == "__main__":
         CENTER_PATCH_WIDTH,
         QTY_CORRECT_TRAIN,
         CENSUS_KERNEL,
-        BLUR_SIZE
+        BLUR_SIZE,
+        CHANNEL_NUMBER
     )
 
     points = torch.FloatTensor(points)

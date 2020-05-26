@@ -59,7 +59,7 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
     print('Computing costs...')
 
-    net = models.Siamese().to(device)
+    net = models.Siamese(channel_number).to(device)
 
     if os.path.exists(weight_path):
         net.load_state_dict(torch.load(weight_path))
@@ -68,12 +68,15 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
     net.eval()
 
-    left = torch.tensor(left, dtype=torch.float32).to(device)
-    right = torch.tensor(right, dtype=torch.float32).to(device)
-
     height = left.shape[0]
     width = left.shape[1]
     c = int(patch_height/2)
+
+    left = left.transpose((2, 0, 1))
+    right = right.transpose((2, 0, 1))
+
+    left = torch.tensor(left, dtype=torch.float32).to(device)
+    right = torch.tensor(right, dtype=torch.float32).to(device)
 
     costs = torch.zeros((height, width, max_disparity),
                         dtype=torch.float32).to(device)
@@ -84,8 +87,8 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
             print('Y ' + str(y))
 
             for x in range(max_disparity, width - max_disparity - 1):
-                windows_l = (left[y-c : y+c+1, x-c : x+c+1])
-                windows_l = windows_l.repeat(max_disparity, 1, 1)
+                windows_l = (left[:, y-c : y+c+1, x-c : x+c+1])
+                windows_l = windows_l.repeat(max_disparity, 1, 1, 1)
                 windows_l = windows_l.view([max_disparity, channel_number, patch_height, patch_width])
 
                 windows_r = torch.zeros(max_disparity, channel_number, patch_height, patch_width).to(device)
@@ -95,7 +98,7 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
                     end_x = x-nd+c+1
 
                     if start_x >= 0:
-                        windows_r[nd-1,0] = (right[y-c : y+c+1, x-nd-c : x-nd+c+1])
+                        windows_r[nd-1] = (right[:, y-c : y+c+1, x-nd-c : x-nd+c+1])
                     
                 output = net(windows_l, windows_r)
                 output = torch.flatten(output)
@@ -214,8 +217,12 @@ def sgm(directory):
     height, width, max_disparity = utils.parseCalib(
         directory._str + '/calib.txt')
 
-    left, right = utils.load_images(
-        directory._str + '/im0.png', directory._str + '/im1.png')
+    if CHANNEL_NUMBER == 3:
+        left = cv2.imread(directory._str + '/im0.png')
+        right = cv2.imread(directory._str + '/im1.png')
+    else:
+        left = cv2.imread(directory._str + '/im0.png', 0)
+        right = cv2.imread(directory._str + '/im1.png', 0)
 
     costs = compute_costs(left, right, max_disparity,
                           PATCH_HEIGHT, PATCH_WIDTH, CHANNEL_NUMBER, DEVICE)

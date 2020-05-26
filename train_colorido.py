@@ -28,16 +28,14 @@ CHANNEL_NUMBER = int(settings.channel_number)
 EPOCHS_NUMBER = int(settings.epochs_number)
 BATCH_SIZE = int(settings.batch_size)
 
-print(BATCH_SIZE)
-
 if not os.path.exists('weights/'):
     os.mkdir('weights/')
 
 weight_path = 'weights/trainedweight.pth'
 
 
-def train(batch_size, epochs_number, pair_list, points_train, points_valid, device, weight_path=None, dataset_neg_low=2.5, dataset_neg_high=6.0, dataset_pos=0.5, center_height=5, center_width=5, patch_height=11, patch_width=11, iter_no_impro=100):
-    net = models.Siamese().to(device)
+def train(batch_size, epochs_number, pair_list, points_train, points_valid, device, weight_path=None, dataset_neg_low=2.5, dataset_neg_high=6.0, dataset_pos=0.5, center_height=5, center_width=5, patch_height=11, patch_width=11, channel_number=1, iter_no_impro=100):
+    net = models.Siamese(channel_number).to(device)
     loss_fn = torch.nn.MarginRankingLoss(0.2)
     optimizer = torch.optim.Adam(
         net.parameters(), lr=0.000001, eps=1e-08, weight_decay=0.0000005)
@@ -55,22 +53,24 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     max_rows = max([len(rows) for image in pair_list for rows in image])
     max_cols = max([len(cols) for image in pair_list for rows in image for cols in rows])
 
-    pair_list_temp = np.zeros((len(pair_list), 2, max_rows, max_cols))
+    pair_list_temp = np.zeros((len(pair_list), 2, channel_number, max_rows, max_cols))
 
     for index, pair in enumerate(pair_list):
         height = max([len(rows) for rows in pair])
         width = max([len(cols) for rows in pair for cols in rows])
 
-        pair_list_temp[index, 0, 0:height, 0:width] = pair[0]
-        pair_list_temp[index, 1, 0:height, 0:width] = pair[1]
+        pair_temp0 = np.asarray(pair[0])
+        pair_temp0 = pair_temp0.transpose((2, 0, 1))
 
-        teste_left = np.asarray(pair_list_temp[index, 0], dtype=np.uint8)
-        teste_right = np.asarray(pair_list_temp[index, 1], dtype=np.uint8)
+        pair_temp1 = np.asarray(pair[1])
+        pair_temp1 = pair_temp1.transpose((2, 0, 1))
 
+        pair_list_temp[index, 0, :, 0:height, 0:width] = pair_temp0
+        pair_list_temp[index, 1, :, 0:height, 0:width] = pair_temp1
 
     pair_list = torch.tensor(pair_list_temp).to(device)
-    points_train = torch.tensor(points_train).to(device)
-    points_valid = torch.tensor(points_valid).to(device)
+    points_train = points_train.clone().detach().to(device)
+    points_valid = points_valid.clone().detach().to(device)
 
     points_split = torch.split(points_train, batch_size, dim=0)
     points_valid_split = torch.split(points_valid, batch_size, dim=0)
@@ -92,14 +92,13 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                 batch_temp = len(points_split[batch_id])
 
                 images1_batch = torch.FloatTensor(
-                    2*batch_temp, CHANNEL_NUMBER, patch_width, patch_height).to(device)
+                    2*batch_temp, channel_number, patch_width, patch_height).to(device)
                 images2_batch = torch.FloatTensor(
-                    2*batch_temp, CHANNEL_NUMBER, patch_width, patch_height).to(device)
+                    2*batch_temp, channel_number, patch_width, patch_height).to(device)
                 target = np.linspace(1.0, 1.0, num=batch_temp)
                 target = torch.from_numpy(target).float().to(device)
 
-                patch_sample = random.sample(
-                    range(0, batch_temp, 1), int(batch_temp))
+                patch_sample = random.sample(range(0, batch_temp, 1), int(batch_temp))
                 patch_order = 0
 
                 for patch_id in range(0, batch_temp):
@@ -113,17 +112,28 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     pos_offset = random.uniform(-dataset_pos, dataset_pos)
                     pos_d = int(np.round(-d + pos_offset))
                     neg_offset = random.uniform(dataset_neg_low, dataset_neg_high)
+                    
                     if random.uniform(0, 1) < 0.5:
                         neg_offset = -neg_offset
+
                     neg_d = int(np.round(-d + neg_offset))
 
                     images1 = pair_list[img_idx][0]
                     images2 = pair_list[img_idx][1]
 
-                    images1_batch[2*patch_id+patch_order][0] = images1[i-center_height : i+center_height+1, j-center_height : j+center_height+1]
-                    images2_batch[2*patch_id+patch_order][0] = images2[i-center_height : i+center_height+1, j + pos_d - center_height : j + pos_d + center_height + 1]
-                    images1_batch[2*patch_id+1-patch_order][0] = images1[i-center_height : i+center_height+1, j-center_height : j+center_height+1]
-                    images2_batch[2*patch_id+1-patch_order][0] = images2[i-center_height: i+center_height+1, j + neg_d - center_height : j + neg_d + center_height + 1]
+                    if channel_number == 3:
+                        pair1Temp_d = images1[:,i-center_height:i+center_height+1,j-center_height:j+center_height+1]
+                        pair2Temp_d = images2[:,i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
+                        pair2TempN_d = images2[:,i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
+                    else:
+                        pair1Temp_d = images1[i-center_height:i+center_height+1,j-center_height:j+center_height+1]
+                        pair2Temp_d = images2[i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
+                        pair2TempN_d = images2[i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
+                            
+                    images1_batch[2*patch_id+patch_order] = pair1Temp_d
+                    images2_batch[2*patch_id+patch_order] = pair2Temp_d
+                    images1_batch[2*patch_id+1-patch_order] = pair1Temp_d
+                    images2_batch[2*patch_id+1-patch_order] = pair2TempN_d
 
                     target[patch_id] = -1.0 + 2*patch_order
 
@@ -163,9 +173,9 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     batch_temp = len(points_valid_split[batch_id])
 
                     images1_batch = torch.FloatTensor(
-                        2*batch_temp, CHANNEL_NUMBER, patch_width, patch_height).to(device)
+                        2*batch_temp, channel_number, patch_width, patch_height).to(device)
                     images2_batch = torch.FloatTensor(
-                        2*batch_temp, CHANNEL_NUMBER, patch_width, patch_height).to(device)
+                        2*batch_temp, channel_number, patch_width, patch_height).to(device)
                     target = np.linspace(1.0, 1.0, num=batch_temp)
                     target = torch.from_numpy(target).float().to(device)
 
@@ -191,14 +201,19 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                         images1 = pair_list[img_idx][0]
                         images2 = pair_list[img_idx][1]
 
-                        images1_batch[2*patch_id+patch_order][0] = images1[i -
-                                                                           center_height:i+center_height+1, j-center_height:j+center_height+1]
-                        images2_batch[2*patch_id+patch_order][0] = images2[i-center_height:i +
-                                                                           center_height+1, j + pos_d - center_height:j + pos_d + center_height + 1]
-                        images1_batch[2*patch_id+1-patch_order][0] = images1[i -
-                                                                             center_height:i+center_height+1, j-center_height:j+center_height+1]
-                        images2_batch[2*patch_id+1-patch_order][0] = images2[i-center_height:i +
-                                                                             center_height+1, j + neg_d - center_height: j + neg_d + center_height + 1]
+                        if channel_number == 3:
+                            pair1Temp_d = images1[:,i-center_height:i+center_height+1,j-center_height:j+center_height+1]
+                            pair2Temp_d = images2[:,i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
+                            pair2TempN_d = images2[:,i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
+                        else:
+                            pair1Temp_d = images1[i-center_height:i+center_height+1,j-center_height:j+center_height+1]
+                            pair2Temp_d = images2[i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
+                            pair2TempN_d = images2[i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
+                            
+                        images1_batch[2*patch_id+patch_order] = pair1Temp_d
+                        images2_batch[2*patch_id+patch_order] = pair2Temp_d
+                        images1_batch[2*patch_id+1-patch_order] = pair1Temp_d
+                        images2_batch[2*patch_id+1-patch_order] = pair2TempN_d
 
                         target[patch_id] = -1.0 + 2*patch_order
 
@@ -260,6 +275,7 @@ if __name__ == "__main__":
         0.5,
         CENTER_PATCH_HEIGHT,
         CENTER_PATCH_WIDTH,
+        PATCH_HEIGHT,
         PATCH_WIDTH,
-        PATCH_HEIGHT
+        CHANNEL_NUMBER
     )
