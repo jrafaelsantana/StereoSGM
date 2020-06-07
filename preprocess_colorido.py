@@ -59,8 +59,8 @@ def generate_patches_training(
             left = cv2.imread(directory._str + '/im0.png', 0)
             right = cv2.imread(directory._str + '/im1.png', 0)
 
-        img_left = left.astype(np.int8)
-        img_right = right.astype(np.int8)
+        img_left = left.astype(np.float32)
+        img_right = right.astype(np.float32)
 
         # mean_left = np.mean(img_left)
         # var_left = np.std(img_left)
