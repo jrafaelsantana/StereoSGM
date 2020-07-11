@@ -11,6 +11,7 @@ import torch
 import os
 import cv2
 import math
+import sys
 
 settings = config.Config()
 torch.manual_seed(int(settings.seed))
@@ -79,33 +80,30 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
     right = torch.tensor(right, dtype=torch.float32).to(device)
 
     costs = torch.zeros((height, width, max_disparity),
-                        dtype=torch.float32).to(device)
+                        dtype=torch.float32).cpu()
 
     with torch.no_grad():
-        for y in range(c, height - c - 1):
+        left = left.unsqueeze(0)
+        right = right.unsqueeze(0)
 
+        out1, out2 = net(left, right, training=False)
+
+        out1 = out1[0].cpu()
+        out2 = out2[0].cpu()
+
+        for y in range(0, height - 1):
             print('Y ' + str(y))
 
             for x in range(max_disparity, width - max_disparity - 1):
-                windows_l = (left[:, y-c : y+c+1, x-c : x+c+1])
-                windows_l = windows_l.repeat(max_disparity, 1, 1, 1)
-                windows_l = windows_l.view([max_disparity, channel_number, patch_height, patch_width])
-
-                windows_r = torch.zeros(max_disparity, channel_number, patch_height, patch_width).to(device)
+                point_l = out1[:, y, x]
 
                 for nd in range(1, max_disparity):
-                    start_x = x-nd-c
-                    end_x = x-nd+c+1
-
-                    if start_x >= 0:
-                        windows_r[nd-1] = (right[:, y-c : y+c+1, x-nd-c : x-nd+c+1])
-                    
-                output = net(windows_l, windows_r)
-                output = torch.flatten(output)
-
-                costs[y, x, :] = output
+                    point_r = out2[:, y, x-nd]
+                    result = torch.sum((point_l - point_r) * (point_l - point_r))
+                
+                    costs[y, x, nd-1] = result
     
-    costs = costs.cpu().numpy()
+    costs = costs.numpy()
 
     return costs
 
@@ -235,7 +233,6 @@ def sgm(directory):
     best_disp = utils.median_filter(best_disp, BLUR_SIZE)
 
     utils.saveDisparity(best_disp, 'disp.png')
-
 
 if __name__ == "__main__":
     p = Path('.' + settings.dataset_train)

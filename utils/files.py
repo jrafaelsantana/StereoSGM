@@ -5,6 +5,7 @@ import cv2
 import re
 from struct import unpack
 import pickle
+import sys
 
 
 def load_pfm(file):
@@ -94,21 +95,32 @@ def saveDisparity(disparity_map, filename):
     cv2.imwrite(filename, disparity_map)
 
 
-def writePfm(disparity_map, filename):
-    assert len(disparity_map.shape) == 2
-    height, width = disparity_map.shape
-    disparity_map = disparity_map.astype(np.float32)
-    o = open(filename, "w")
+def write_pfm(file, image, scale = 1):
+    file = open(file, 'wb')
 
-    o.write("Pf\n")
-    o.write("{} {}\n".format(width, height))
-    o.write("-1.0\n")
+    color = None
 
-    fmt = "<f"
-    for h in range(height-1, -1, -1):
-        for w in range(width):
-            o.write(struct.pack(fmt, disparity_map[h, w]))
-    o.close()
+    if image.dtype.name != 'float32':
+        raise Exception('Image dtype must be float32.')
+
+    if len(image.shape) == 3 and image.shape[2] == 3: # color image
+        color = True
+    elif len(image.shape) == 2 or len(image.shape) == 3 and image.shape[2] == 1: # greyscale
+        color = False
+    else:
+        raise Exception('Image must have H x W x 3, H x W x 1 or H x W dimensions.')
+
+    file.write(b'PF\n' if color else b'Pf\n')
+    file.write(b'%d %d\n' % (image.shape[1], image.shape[0]))
+
+    endian = image.dtype.byteorder
+
+    if endian == '<' or endian == '=' and sys.byteorder == 'little':
+        scale = -scale
+
+    file.write(b'%f\n' % scale)
+
+    image.tofile(file)   
 
 
 def saveTimeFile(times, path):

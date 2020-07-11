@@ -36,15 +36,30 @@ class Siamese(nn.Module):
         #x = self.liner(x)
         return x
 
-    def forward(self, x1, x2):
-
-        # print(x1.shape)
-        
+    def forward(self, x1, x2, training = True):
         x1 = self.gn(x1)
         out1 = self.forward_one(x1)
         out1 = self.gn(out1)
-        out1 = out1.view(out1.size()[0], -1)
-        # print(out1.shape)
+
+        x2 = self.gn(x2)
+        out2 = self.forward_one(x2)
+        out2 = self.gn(out2)
+
+        if training:
+            out1 = out1.view(out1.size()[0], -1)
+            out2 = out2.view(out2.size()[0], -1)
+
+            out = torch.sum((out1 - out2) * (out1 - out2), 1)
+
+            return out
+        else:
+            return out1, out2
+
+
+        # print(x1.shape)
+        
+        
+        #out1 = out1.view(out1.size()[0], -1)
         
         #qn = torch.norm(out1, p=2, dim=1, keepdim=True).detach()
         # print(qn.shape)
@@ -52,10 +67,8 @@ class Siamese(nn.Module):
         # input()
         #out1 = out1.div(qn.expand_as(out1))
         #out1 = F.normalize(out1, dim=1, p=2)
-        x2 = self.gn(x2)
-        out2 = self.forward_one(x2)
-        out2 = self.gn(out2)
-        out2 = out2.view(out2.size()[0], -1)
+        
+        #out2 = out2.view(out2.size()[0], -1)
         #qn = torch.norm(out2, p=2, dim=1,keepdim=True).detach()
         #out2 = out2.div(qn.expand_as(out2))
         #out2 = F.normalize(out2, dim=1, p=2)
@@ -66,7 +79,10 @@ class Siamese(nn.Module):
         #out2 = out2.view(out2.size()[0], out2.size()[1], -1)
 
         #dis = torch.abs(out1 - out2)
-        out = torch.sqrt(torch.sum((out1 - out2) * (out1 - out2), 1))
+        
+        #Anterior
+        #out = torch.sum((out1 - out2) * (out1 - out2), 1)
+        
         #dis = torch.cat((out1,out2),0)
         #dis = self.liner(dis)
 
@@ -86,7 +102,8 @@ class Siamese(nn.Module):
         # print(dis.shape)
 
         #out = dis
-        return out
+        #return out1, out2
+        #return out
 
 
 def weights_init_uniform_rule(m):
