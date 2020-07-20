@@ -76,31 +76,33 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
     left = left.transpose((2, 0, 1))
     right = right.transpose((2, 0, 1))
 
-    left = torch.tensor(left, dtype=torch.float32).to(device)
-    right = torch.tensor(right, dtype=torch.float32).to(device)
+    left = torch.FloatTensor(left).to(device)
+    right = torch.FloatTensor(right).to(device)
+
+    left = left.unsqueeze(0)
+    right = right.unsqueeze(0)
 
     costs = torch.zeros((height, width, max_disparity),
                         dtype=torch.float32).cpu()
 
-    with torch.no_grad():
-        left = left.unsqueeze(0)
-        right = right.unsqueeze(0)
 
+    with torch.no_grad():
         out1, out2 = net(left, right, training=False)
 
-        out1 = out1[0].cpu()
-        out2 = out2[0].cpu()
+        out1 = out1.squeeze().cpu()
+        out2 = out2.squeeze().cpu()
 
         for y in range(0, height - 1):
+        #for y in range(100, 250):
             print('Y ' + str(y))
 
             for x in range(max_disparity, width - max_disparity - 1):
                 point_l = out1[:, y, x]
 
-                for nd in range(1, max_disparity):
-                    point_r = out2[:, y, x-nd]
+                for nd in range(1, max_disparity+1):
+                    point_r = out2[:, y, x-(nd-1)]
                     result = torch.sum((point_l - point_r) * (point_l - point_r))
-                
+                    
                     costs[y, x, nd-1] = result
     
     costs = costs.numpy()
@@ -206,6 +208,7 @@ def select_best_disparity(aggregation_cost, max_disparity):
 
     volume = np.sum(aggregation_cost, axis=3)
     disparity_map = np.argmin(volume, axis=2)
+
     return np.uint8(utils.normalize_image(disparity_map, max_disparity))
 
 
