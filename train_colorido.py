@@ -137,6 +137,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                     target[patch_id] = -1.0 + 2*patch_order
 
+                #print(images1_batch.shape)
                 output = net(images1_batch, images2_batch)
 
                 output_s = output[::2]

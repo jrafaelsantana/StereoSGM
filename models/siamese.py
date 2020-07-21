@@ -6,22 +6,22 @@ from .groupnorm import GroupNorm
 
 class Siamese(nn.Module):
 
-    def __init__(self, chn=1):
+    def __init__(self, chn=1, padding_parameter=0):
         super(Siamese, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(chn, 64, 3, padding=1),  # 64@96*96
+            nn.Conv2d(chn, 64, 3, padding=padding_parameter),  # 64@96*96
             nn.ReLU(),
 
-            nn.Conv2d(64, 64, 3, padding=1),
+            nn.Conv2d(64, 64, 3, padding=padding_parameter),
             nn.ReLU(),    # 128@42*42
 
-            nn.Conv2d(64, 128, 3, padding=1),
+            nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),    # 128@18*18
 
-            nn.Conv2d(128, 128, 3, padding=1),
+            nn.Conv2d(128, 128, 3, padding=padding_parameter),
             nn.ReLU(),   # 256@6*6
 
-            nn.Conv2d(128, 128, 3, padding=1),
+            nn.Conv2d(128, 128, 3, padding=padding_parameter),
 
         )
 
@@ -48,8 +48,15 @@ class Siamese(nn.Module):
         if training:
             out1 = out1.view(out1.size()[0], -1)
             out2 = out2.view(out2.size()[0], -1)
-
+            #out1 = out1.view(out1.size()[0], -1, out1.size()[1])
+            #out2 = out2.view(out2.size()[0], out2.size()[1], -1)   
+            #print(out1.shape)
             out = torch.sum((out1 - out2) * (out1 - out2), 1)
+            #print(out1.shape)
+            #print(out2.shape)
+            #out = torch.abs(out1 - out2)
+            #out = torch.abs(torch.sum((out1 - out2), 1))
+            #print(out.shape)
 
             return out
         else:

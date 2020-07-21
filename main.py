@@ -60,7 +60,7 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
     print('Computing costs...')
 
-    net = models.Siamese(channel_number).to(device)
+    net = models.Siamese(channel_number,1).to(device)
 
     if os.path.exists(weight_path):
         net.load_state_dict(torch.load(weight_path))
@@ -87,10 +87,16 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
 
     with torch.no_grad():
+
+        #print(left.shape)
+        #print(
+
         out1, out2 = net(left, right, training=False)
 
         out1 = out1.squeeze().cpu()
         out2 = out2.squeeze().cpu()
+
+        print(out2.shape)
 
         for y in range(0, height - 1):
         #for y in range(100, 250):
@@ -100,8 +106,11 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
                 point_l = out1[:, y, x]
 
                 for nd in range(1, max_disparity+1):
+                    
                     point_r = out2[:, y, x-(nd-1)]
+                    #print(point_r.shape)
                     result = torch.sum((point_l - point_r) * (point_l - point_r))
+                    #result = torch.abs(torch.sum((point_l - point_r), 1))
                     
                     costs[y, x, nd-1] = result
     

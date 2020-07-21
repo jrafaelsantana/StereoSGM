@@ -14,8 +14,11 @@ class GroupNorm(nn.Module):
         N,C,H,W = x.size()
         G = self.num_groups
         assert C % G == 0
-
-        x = x.view(N,G,-1)
+        #print("N", N)
+        #print("G", G)
+        #print(x.shape)
+        x = x.reshape(N,G,-1)
+        #print("OPA" ,x.shape)
         mean = x.mean(-1, keepdim=True)
         var = x.var(-1, keepdim=True)
 
