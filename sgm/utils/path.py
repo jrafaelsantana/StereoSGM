@@ -1,6 +1,7 @@
 from numpy import array, reshape, zeros, abs, repeat, amin
+from numba import jit
 
-
+@jit
 def get_path_cost(slice, offset, p1, p2):
     """
     Finds the minimum costs in a D x M slice (where M = the number of pixels in the given direction)
@@ -18,10 +19,16 @@ def get_path_cost(slice, offset, p1, p2):
     disparities = [d for d in range(disparity_dim)] * disparity_dim
     disparities = array(disparities).reshape(disparity_dim, disparity_dim)
 
-    penalties = zeros(
-        shape=(disparity_dim, disparity_dim), dtype=slice.dtype)
-    penalties[abs(disparities - disparities.T) == 1] = p1
-    penalties[abs(disparities - disparities.T) > 1] = p2
+    penalties = zeros(shape=(disparity_dim, disparity_dim), dtype=slice.dtype)
+    
+    calc = abs(disparities - disparities.T)
+    
+    for x in range(0, disparity_dim):
+        for y in range(0, disparity_dim):
+            if calc[x, y] == 1:
+                penalties[x, y] = p1
+            elif calc[x, y] > 1:
+                penalties[x, y] = p2
 
     minimum_cost_path = zeros(
         shape=(other_dim, disparity_dim), dtype=slice.dtype)

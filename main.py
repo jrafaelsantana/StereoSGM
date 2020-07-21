@@ -6,12 +6,15 @@ import evaluate
 import models
 
 import numpy as np
+import numba
+from numba import jit
 from pathlib import Path
 import torch
 import os
 import cv2
 import math
 import sys
+import datetime
 
 settings = config.Config()
 torch.manual_seed(int(settings.seed))
@@ -59,6 +62,7 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
     """
 
     print('Computing costs...')
+    begin_time = datetime.datetime.now()
 
     net = models.Siamese(channel_number,1).to(device)
 
@@ -82,40 +86,38 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
     left = left.unsqueeze(0)
     right = right.unsqueeze(0)
 
-    costs = torch.zeros((height, width, max_disparity),
-                        dtype=torch.float32).cpu()
-
-
     with torch.no_grad():
 
-        #print(left.shape)
-        #print(
-
         out1, out2 = net(left, right, training=False)
+        print("Run CNN: {}".format(datetime.datetime.now() - begin_time))
 
-        out1 = out1.squeeze().cpu()
-        out2 = out2.squeeze().cpu()
+        begin_time = datetime.datetime.now()
+        
+        out1 = out1.squeeze().cpu().numpy()
+        out2 = out2.squeeze().cpu().numpy()
+        costs = calc_costs(out1, out2, max_disparity, width, height)
+        
+        print("Costs: {}".format(datetime.datetime.now() - begin_time))
 
-        print(out2.shape)
+        return costs
 
-        for y in range(0, height - 1):
-        #for y in range(100, 250):
-            print('Y ' + str(y))
+@jit(nopython=True)
+def calc_costs(out1, out2, max_disparity, width, height):
+    costs = np.zeros((height, width, max_disparity), dtype=np.float32)
 
-            for x in range(max_disparity, width - max_disparity - 1):
-                point_l = out1[:, y, x]
+    for y in range(0, height - 1):
+        #print('Y ' + str(y))
 
-                for nd in range(1, max_disparity+1):
+        for x in range(max_disparity, width - max_disparity - 1):
+            point_l = out1[:, y, x]
+
+            for nd in range(1, max_disparity+1):
                     
-                    point_r = out2[:, y, x-(nd-1)]
-                    #print(point_r.shape)
-                    result = torch.sum((point_l - point_r) * (point_l - point_r))
-                    #result = torch.abs(torch.sum((point_l - point_r), 1))
+                point_r = out2[:, y, x-(nd-1)]
+                result = np.sum((point_l - point_r) * (point_l - point_r))
                     
-                    costs[y, x, nd-1] = result
+                costs[y, x, nd-1] = result
     
-    costs = costs.numpy()
-
     return costs
 
 
@@ -132,6 +134,7 @@ def compute_aggregation(cost, paths, p1, p2):
     """
 
     print('Computing aggregation costs...')
+    begin_time = datetime.datetime.now()
 
     height = cost.shape[0]
     width = cost.shape[1]
@@ -200,6 +203,7 @@ def compute_aggregation(cost, paths, p1, p2):
         aggregation_volume[:, :, :, path_id] = main_aggregation
         aggregation_volume[:, :, :, path_id + 1] = opposite_aggregation
         path_id = path_id + 2
+    print("Compute aggregation: {}".format(datetime.datetime.now() - begin_time))
 
     return aggregation_volume
 
@@ -214,9 +218,12 @@ def select_best_disparity(aggregation_cost, max_disparity):
     """
 
     print('Selecting best disparity...')
+    begin_time = datetime.datetime.now()
 
     volume = np.sum(aggregation_cost, axis=3)
     disparity_map = np.argmin(volume, axis=2)
+
+    print("Best disparity: {}".format(datetime.datetime.now() - begin_time))
 
     return np.uint8(utils.normalize_image(disparity_map, max_disparity))
 

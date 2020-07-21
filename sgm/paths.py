@@ -1,6 +1,9 @@
 from direction import Direction
+from numba import jitclass
 
+spec = []
 
+@jitclass(spec)
 class Paths:
     def __init__(self):
         """
