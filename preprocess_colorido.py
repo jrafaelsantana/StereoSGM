@@ -3,11 +3,11 @@ import cv2
 import numpy as np
 import torch
 import random
-from utils import load_pfm
+from utils import load_pfm, write_pfm
 import math
 import config
 from pathlib import Path
-from utils import save_obj, blur_image, census_transformation
+from utils import save_obj, census_transformation
 
 if not os.path.exists('./obj'):
     os.mkdir('./obj')
@@ -25,8 +25,6 @@ CENTER_PATCH_HEIGHT = int(PATCH_HEIGHT/2)
 QTY_CORRECT_TRAIN = int(settings.train_correct)
 QTY_INCORRECT_TRAIN = int(settings.train_incorrect)
 CHANNEL_NUMBER = int(settings.channel_number)
-CENSUS_KERNEL = int(settings.kernel_size_census)
-BLUR_SIZE = int(settings.blur_size)
 
 
 def generate_patches_training(
@@ -34,8 +32,6 @@ def generate_patches_training(
     center_height,
     center_width,
     qt_correct,
-    census_kernel,
-    blur_size,
     channel_number=1,
     dataset_neg_high=20.0,
     dataset_pos=0.5
@@ -71,6 +67,13 @@ def generate_patches_training(
         # img_right_d = (img_right - mean_right)/var_right
 
         pfm_data = load_pfm(directory._str + '/disp0GT.pfm')
+        # teste = pfm_data.astype('float32')
+
+        # #cv2.imwrite('testevcs.pfm', teste, cv2.CV_32F)
+        # write_pfm('teste.pfm', teste)
+        # print('aqui')
+        # input()
+        
         mask = cv2.imread(directory._str + '/mask0nocc.png', 0)
 
         total_pixel = img_left.shape[0] * img_left.shape[1]
@@ -126,8 +129,6 @@ if __name__ == "__main__":
         CENTER_PATCH_HEIGHT,
         CENTER_PATCH_WIDTH,
         QTY_CORRECT_TRAIN,
-        CENSUS_KERNEL,
-        BLUR_SIZE,
         CHANNEL_NUMBER
     )
 

@@ -7,7 +7,7 @@ from utils import load_pfm
 import math
 import config
 from pathlib import Path
-from utils import save_obj, blur_image, census_transformation
+from utils import save_obj, census_transformation
 
 if not os.path.exists('./obj'):
     os.mkdir('./obj')
@@ -25,8 +25,6 @@ CENTER_PATCH_HEIGHT = int(PATCH_HEIGHT/2)
 QTY_CORRECT_TRAIN = int(settings.train_correct)
 QTY_INCORRECT_TRAIN = int(settings.train_incorrect)
 CHANNEL_NUMBER = int(settings.channel_number)
-CENSUS_KERNEL = int(settings.kernel_size_census)
-BLUR_SIZE = int(settings.blur_size)
 
 
 def generate_patches_training(
@@ -35,7 +33,6 @@ def generate_patches_training(
     center_width,
     qt_correct,
     census_kernel,
-    blur_size,
     dataset_neg_high=20.0,
     dataset_pos=0.5
 ):
@@ -120,8 +117,7 @@ if __name__ == "__main__":
         CENTER_PATCH_HEIGHT,
         CENTER_PATCH_WIDTH,
         QTY_CORRECT_TRAIN,
-        CENSUS_KERNEL,
-        BLUR_SIZE
+        CENSUS_KERNEL
     )
 
     points = torch.FloatTensor(points)

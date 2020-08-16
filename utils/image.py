@@ -1,5 +1,5 @@
 from numpy import zeros, pad, uint8, float64
-from cv2 import normalize, NORM_MINMAX, GaussianBlur, medianBlur, imread
+from cv2 import normalize, NORM_MINMAX, imread
 
 
 def load_images(left_name, right_name):
@@ -14,23 +14,6 @@ def load_images(left_name, right_name):
 
     left = imread(left_name, 0)
     right = imread(right_name, 0)
-
-    return left, right
-
-
-def blur_image(left, right, blur_size):
-    """
-    Blur image pair
-
-    :param left: Left image.
-    :param right: Right image.
-    :param blur_size: Blur kernel size
-
-    :return: Left and right images with blur.
-    """
-
-    left = GaussianBlur(left, (blur_size, blur_size), 0, 0)
-    right = GaussianBlur(right, (blur_size, blur_size), 0, 0)
 
     return left, right
 
@@ -79,9 +62,3 @@ def census_transformation(image, census_kernel):
             census[i, j] = ce
 
     return census
-
-
-def median_filter(image, blur_size):
-    image = medianBlur(image, blur_size)
-
-    return image

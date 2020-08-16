@@ -21,8 +21,7 @@ class Siamese(nn.Module):
             nn.Conv2d(128, 128, 3, padding=padding_parameter),
             nn.ReLU(),   # 256@6*6
 
-            nn.Conv2d(128, 128, 3, padding=padding_parameter),
-
+            nn.Conv2d(128, 128, 1, padding=padding_parameter),
         )
 
         #self.liner = nn.Sequential(nn.Linear(256, 1), nn.Sigmoid())
@@ -49,9 +48,12 @@ class Siamese(nn.Module):
             out1 = out1.view(out1.size()[0], -1)
             out2 = out2.view(out2.size()[0], -1)
             #out1 = out1.view(out1.size()[0], -1, out1.size()[1])
-            #out2 = out2.view(out2.size()[0], out2.size()[1], -1)   
-            #print(out1.shape)
-            out = torch.sum((out1 - out2) * (out1 - out2), 1)
+            #out2 = out2.view(out2.size()[0], out2.size()[1], -1)
+            #out = torch.abs(torch.sum(out1 * out2, 1))
+            out = torch.sqrt(torch.sum((out1 - out2) * (out1 - out2), 1))
+            #out = torch.sqrt(torch.sum(torch.pow(out1 * out2, 2),1))
+            #out = torch.sum((out1 - out2) * (out1 - out2), 1)
+
             #print(out1.shape)
             #print(out2.shape)
             #out = torch.abs(out1 - out2)

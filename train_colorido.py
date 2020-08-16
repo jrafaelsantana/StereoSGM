@@ -37,8 +37,10 @@ weight_path = 'weights/trainedweight.pth'
 def train(batch_size, epochs_number, pair_list, points_train, points_valid, device, weight_path=None, dataset_neg_low=2.5, dataset_neg_high=6.0, dataset_pos=0.5, center_height=5, center_width=5, patch_height=11, patch_width=11, channel_number=1, iter_no_impro=100):
     net = models.Siamese(channel_number).to(device)
     loss_fn = torch.nn.MarginRankingLoss(0.2)
+    #loss_fn = torch.nn.BCELoss()
+
     optimizer = torch.optim.Adam(
-        net.parameters(), lr=0.000001, eps=1e-08, weight_decay=0.0000005)
+        net.parameters(), lr=0.0000001, eps=1e-08, weight_decay=0.0000005)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
@@ -271,7 +273,7 @@ if __name__ == "__main__":
         points_valid,
         DEVICE,
         weight_path,
-        2.5,
+        1.5,
         6,
         0.5,
         CENTER_PATCH_HEIGHT,

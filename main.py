@@ -30,8 +30,6 @@ CENTER_PATCH_HEIGHT = int(PATCH_HEIGHT/2)
 QTY_CORRECT_TRAIN = int(settings.train_correct)
 QTY_INCORRECT_TRAIN = int(settings.train_incorrect)
 CHANNEL_NUMBER = int(settings.channel_number)
-CENSUS_KERNEL = int(settings.kernel_size_census)
-BLUR_SIZE = int(settings.blur_size)
 PENALTY_EQUAL_1 = int(settings.penalty_equal_1)
 PENALTY_BIGGER_THEN_1 = int(settings.penalty_bigger_than_1)
 
@@ -45,8 +43,7 @@ weight_path = 'weights/trainedweight.pth'
         1- Compute costs (Census transformation and Hamming distance)
         2- Compute left and right aggregation volume
         3- Select best disparity
-        4- Apply median filter
-        5- Evaluate
+        4- Evaluate
 """
 
 
@@ -114,7 +111,10 @@ def calc_costs(out1, out2, max_disparity, width, height):
             for nd in range(1, max_disparity+1):
                     
                 point_r = out2[:, y, x-(nd-1)]
-                result = np.sum((point_l - point_r) * (point_l - point_r))
+                #result = np.sum((point_l - point_r) * (point_l - point_r))
+                #result = np.abs(np.sum(point_l * point_r))
+                #result = -np.sqrt(np.sum(np.power(point_l * point_r, 2)))
+                result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
                     
                 costs[y, x, nd-1] = result
     
@@ -225,14 +225,15 @@ def select_best_disparity(aggregation_cost, max_disparity):
 
     print("Best disparity: {}".format(datetime.datetime.now() - begin_time))
 
-    return np.uint8(utils.normalize_image(disparity_map, max_disparity))
+    return disparity_map
 
 
 def sgm(directory):
     paths = Paths()
 
-    height, width, max_disparity = utils.parseCalib(
-        directory._str + '/calib.txt')
+    height, width, max_disparity = utils.parseCalib(directory._str + '/calib.txt')
+
+    gt_file = utils.load_pfm(directory._str + '/disp0GT.pfm')
 
     if CHANNEL_NUMBER == 3:
         left = cv2.imread(directory._str + '/im0.png')
@@ -248,10 +249,14 @@ def sgm(directory):
         costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
 
     best_disp = select_best_disparity(aggregation, max_disparity)
+    test = best_disp.astype(np.float32)
+    utils.write_pfm('file.pfm', test)
+    
+    utils.saveDisparity(np.uint8(best_disp), 'disp.png')
 
-    best_disp = utils.median_filter(best_disp, BLUR_SIZE)
-
-    utils.saveDisparity(best_disp, 'disp.png')
+    print("Evaluate")
+    recall = evaluate.recall(best_disp, gt_file, max_disparity)
+    print('\tRecall = {:.2f}%'.format(recall * 100.0))
 
 if __name__ == "__main__":
     p = Path('.' + settings.dataset_train)

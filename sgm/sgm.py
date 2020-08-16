@@ -3,7 +3,7 @@ import numpy as np
 from paths import Paths
 from utils import census_transformation, hamming_distance, normalize_image, get_path_cost, get_indices
 
-from cv2 import imread, GaussianBlur, imshow, waitKey, medianBlur
+from cv2 import imread, imshow, waitKey
 
 """
     Semi-global matching
@@ -12,8 +12,7 @@ from cv2 import imread, GaussianBlur, imshow, waitKey, medianBlur
         1- Compute costs (Census transformation and Hamming distance)
         2- Compute left and right aggregation volume
         3- Select best disparity
-        4- Apply median filter
-        5- Evaluate
+        4- Evaluate
 """
 
 
@@ -157,12 +156,10 @@ def select_best_disparity(aggregation_cost, max_disparity):
 def sgm():
     paths = Paths()
 
-    left = imread('im2.png', 0)
-    right = imread('im6.png', 0)
+    left = imread('im0.png', 0)
+    right = imread('im1.png', 0)
 
-    left = GaussianBlur(left, (3, 3), 0, 0)
-    right = GaussianBlur(right, (3, 3), 0, 0)
-
+    print('Aqui')
     left_cost, right_cost = compute_costs(left, right, (5, 5), 64)
 
     left_aggregation = compute_aggregation(
@@ -172,9 +169,6 @@ def sgm():
 
     left_disparity = select_best_disparity(left_aggregation, 64)
     right_disparity = select_best_disparity(right_aggregation, 64)
-
-    left_disparity = medianBlur(left_disparity, 5)
-    right_disparity = medianBlur(right_disparity, 5)
 
     imshow('left', left_disparity)
     imshow('right', right_disparity)

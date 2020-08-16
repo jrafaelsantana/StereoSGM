@@ -1,4 +1,4 @@
-from cv2 import imread
+import cv2
 import numpy as np
 
 
@@ -12,7 +12,6 @@ def recall(disparity, gt, maximum_disparity):
 
     :return: Tate of correct predictions.
     """
-    gt = np.float32(cv2.imread(gt, cv2.IMREAD_GRAYSCALE))
     gt = np.int16(gt / 255.0 * float(maximum_disparity))
     disparity = np.int16(np.float32(disparity) / 255.0 *
                          float(maximum_disparity))
