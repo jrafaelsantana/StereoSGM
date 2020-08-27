@@ -103,8 +103,6 @@ def generate_patches_training(
                                 pair2Temp = img_right[i-center_height:i+center_height +
                                                     1, j-center_height-d_r+d_I:j+center_height+1-d_r+d_I]
                                 d_I = d_I + 1
-                                pair2TempValid = pair2Temp[pair2Temp == 255]
-                                pair2TempVar = np.std(pair2Temp)
 
                             points.append((i, j, d, index_pair))
                             total = total + 1

@@ -127,6 +127,19 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                         pair1Temp_d = images1[:,i-center_height:i+center_height+1,j-center_height:j+center_height+1]
                         pair2Temp_d = images2[:,i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
                         pair2TempN_d = images2[:,i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
+
+                        '''pair2Temp_d_p_aug = np.uint8(pair2Temp_d.cpu())
+                        pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 1, 0))
+
+                        if random.uniform(0, 1) < 0.3:
+                            if random.uniform(0, 1) < 0.5:
+                                pair2Temp_d_p_aug = utils.flip(pair2Temp_d_p_aug, True)
+                            else:
+                                pair2Temp_d_p_aug = utils.rotate(pair2Temp_d_p_aug, True)
+
+                        pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 0, 1))
+                        pair2Temp_d = torch.tensor(pair2Temp_d_p_aug, dtype=torch.float64).to(device)'''
+
                     else:
                         pair1Temp_d = images1[i-center_height:i+center_height+1,j-center_height:j+center_height+1]
                         pair2Temp_d = images2[i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
@@ -242,12 +255,14 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                 avg_val_loss = loss_val/loss_val_cnt
 
-                if(smaller_error > avg_val_loss):
+                '''if(smaller_error > avg_val_loss):
                     smaller_error = avg_val_loss
                     iter_no_impro_counter = 0
                     torch.save(net.state_dict(), weight_path)
                 else:
-                    iter_no_impro_counter = iter_no_impro_counter + 1
+                    iter_no_impro_counter = iter_no_impro_counter + 1'''
+
+                torch.save(net.state_dict(), weight_path)
 
             print('epoch\t%d loss:\t%.23f val_loss:\t%.5f error:\t%.5f time lapsed:\t%.2f s' % (
                 epoch, avg_loss, avg_val_loss, avg_err, time.time() - time_start))
@@ -273,7 +288,7 @@ if __name__ == "__main__":
         points_valid,
         DEVICE,
         weight_path,
-        1.5,
+        1,
         6,
         0.5,
         CENTER_PATCH_HEIGHT,

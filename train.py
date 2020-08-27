@@ -224,6 +224,8 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                 avg_val_loss = loss_val/loss_val_cnt
 
+                torch.save(net.state_dict(), weight_path)
+
                 if(smaller_error > avg_val_loss):
                     smaller_error = avg_val_loss
                     iter_no_impro_counter = 0
@@ -255,8 +257,8 @@ if __name__ == "__main__":
         points_valid,
         DEVICE,
         weight_path,
-        2.5,
-        6,
+        1,
+        3,
         0.5,
         CENTER_PATCH_HEIGHT,
         CENTER_PATCH_WIDTH,
