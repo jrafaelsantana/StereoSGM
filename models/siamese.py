@@ -33,17 +33,18 @@ class Siamese(nn.Module):
         return x
 
     def forward(self, x1, x2, training = True):
-        x1 = self.gn(x1)
+        #x1 = self.gn(x1)
         out1 = self.forward_one(x1)
         out1 = self.gn(out1)
 
-        x2 = self.gn(x2)
+        #x2 = self.gn(x2)
         out2 = self.forward_one(x2)
         out2 = self.gn(out2)
 
         if training:
             out1 = out1.view(out1.size()[0], -1)
             out2 = out2.view(out2.size()[0], -1)
+
             #out1 = out1.view(out1.size()[0], -1, out1.size()[1])
             #out2 = out2.view(out2.size()[0], out2.size()[1], -1)
             #out = torch.abs(torch.sum(out1 * out2, 1))

@@ -37,10 +37,8 @@ weight_path = 'weights/trainedweight.pth'
 def train(batch_size, epochs_number, pair_list, points_train, points_valid, device, weight_path=None, dataset_neg_low=2.5, dataset_neg_high=6.0, dataset_pos=0.5, center_height=5, center_width=5, patch_height=11, patch_width=11, channel_number=1, iter_no_impro=100):
     net = models.Siamese(channel_number).to(device)
     loss_fn = torch.nn.MarginRankingLoss(0.2)
-    #loss_fn = torch.nn.BCELoss()
 
-    optimizer = torch.optim.Adam(
-        net.parameters(), lr=0.0000001, eps=1e-08, weight_decay=0.0000005)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.0000001, eps=1e-08, weight_decay=0.0000005)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
@@ -142,8 +140,8 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                     else:
                         pair1Temp_d = images1[i-center_height:i+center_height+1,j-center_height:j+center_height+1]
-                        pair2Temp_d = images2[i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
-                        pair2TempN_d = images2[i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
+                        pair2Temp_d = images2[i-center_height:i+center_height+1,j-center_height+pos_d:j+center_height+pos_d+1]
+                        pair2TempN_d = images2[i-center_height:i+center_height+1,j-center_height+neg_d:j+center_height+neg_d+1]
                             
                     images1_batch[2*patch_id+patch_order] = pair1Temp_d
                     images2_batch[2*patch_id+patch_order] = pair2Temp_d

@@ -100,8 +100,9 @@ def generate_patches_training(
                             d_I = -dataset_neg_high
 
                             while(d_I < dataset_neg_high):
-                                pair2Temp = img_right[i-center_height:i+center_height +
-                                                    1, j-center_height-d_r+d_I:j+center_height+1-d_r+d_I]
+                                '''pair2Temp = img_right[i-center_height:i+center_height +
+                                                    1, j-center_height-d_r+d_I:j+center_height+1-d_r+d_I]'''
+
                                 d_I = d_I + 1
 
                             points.append((i, j, d, index_pair))

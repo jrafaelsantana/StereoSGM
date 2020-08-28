@@ -4,4 +4,5 @@ venv/
 dataset/
 obj*/
 weights*/
-disp.png
+*.png
+*.pfm
