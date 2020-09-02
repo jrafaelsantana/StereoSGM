@@ -38,7 +38,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     net = models.Siamese(channel_number).to(device)
     loss_fn = torch.nn.MarginRankingLoss(0.2)
 
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.0000001, eps=1e-08, weight_decay=0.0000005)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.00001, eps=1e-08, weight_decay=0.0000005)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
