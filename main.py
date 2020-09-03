@@ -105,18 +105,19 @@ def calc_costs(out1, out2, max_disparity, width, height):
     for y in range(0, height - 1):
         #print('Y ' + str(y))
 
-        for x in range(max_disparity, width - max_disparity - 1):
+        for x in range(0, width - 1):
             point_l = out1[:, y, x]
 
-            for nd in range(1, max_disparity+1):
-                    
-                point_r = out2[:, y, x-(nd-1)]
+            for nd in range(0, max_disparity):
+                point_r = out2[:, y, x-nd]
                 #result = np.sum((point_l - point_r) * (point_l - point_r))
                 #result = np.abs(np.sum(point_l * point_r))
                 #result = -np.sqrt(np.sum(np.power(point_l * point_r, 2)))
                 result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
                     
-                costs[y, x, nd-1] = result
+                costs[y, x, nd] = result
+
+    costs[:]
     
     return costs
 

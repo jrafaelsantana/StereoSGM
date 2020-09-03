@@ -279,19 +279,19 @@ if __name__ == "__main__":
     print("Training CNN...")
 
     train(
-        BATCH_SIZE,
-        EPOCHS_NUMBER,
-        pair_list,
-        points_train,
-        points_valid,
-        DEVICE,
-        weight_path,
-        1,
-        6,
-        0.5,
-        CENTER_PATCH_HEIGHT,
-        CENTER_PATCH_WIDTH,
-        PATCH_HEIGHT,
-        PATCH_WIDTH,
-        CHANNEL_NUMBER
+        batch_size = BATCH_SIZE,
+        epochs_number = EPOCHS_NUMBER,
+        pair_list = pair_list,
+        points_train = points_train,
+        points_valid = points_valid,
+        device = DEVICE,
+        weight_path = weight_path,
+        dataset_neg_low = 1.5,
+        dataset_neg_high = 6,
+        dataset_pos = 0.5,
+        center_height = CENTER_PATCH_HEIGHT,
+        center_width = CENTER_PATCH_WIDTH,
+        patch_height = PATCH_HEIGHT,
+        patch_width = PATCH_WIDTH,
+        channel_number = CHANNEL_NUMBER
     )
