@@ -142,36 +142,23 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                             pair2Temp_d_p_aug = np.uint8(pair2Temp_d.cpu())
                             pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 1, 0))
 
-                            # Horizontal shift
-                            if random.uniform(0, 1) < 0.3:
+                            augumentation_option = random.uniform(0, 7)
+
+                            if augumentation_option == 0:
                                 pair2Temp_d_p_aug = utils.horizontal_shift(pair2Temp_d_p_aug, AUGUMENTATION_HSHIFT)
-                            
-                            # Vertical shift 
-                            if random.uniform(0, 1) < 0.3:
+                            elif augumentation_option == 1:
                                 pair2Temp_d_p_aug = utils.vertical_shift(pair2Temp_d_p_aug, AUGUMENTATION_VSHIFT)
-
-                            # Brightness
-                            if random.uniform(0, 1) < 0.3:
+                            elif augumentation_option == 2:
                                 pair2Temp_d_p_aug = utils.brightness(pair2Temp_d_p_aug, AUGUMENTATION_BRIGHT_LOW, AUGUMENTATION_BRIGHT_HIGH)
-
-                            # Zoom 
-                            if random.uniform(0, 1) < 0.3:
+                            elif augumentation_option == 3:
                                 pair2Temp_d_p_aug = utils.zoom(pair2Temp_d_p_aug, AUGUMENTATION_ZOOM)
-
-                            # Channel Shift
-                            if random.uniform(0, 1) < 0.2:
+                            elif augumentation_option == 4:
                                 pair2Temp_d_p_aug = utils.channel_shift(pair2Temp_d_p_aug, AUGUMENTATION_CHNSHIFT)
-
-                            # Horizontal Flip
-                            if random.uniform(0, 1) < AUGUMENTATION_HFLIP:
+                            elif augumentation_option == 5:
                                 pair2Temp_d_p_aug = utils.horizontal_flip(pair2Temp_d_p_aug)
-
-                            # Vertical Flip
-                            if random.uniform(0, 1) < AUGUMENTATION_VFLIP:
-                                pair2Temp_d_p_aug = utils.horizontal_flip(pair2Temp_d_p_aug)
-
-                            # Rotation
-                            if random.uniform(0, 1) < 0.3:
+                            elif augumentation_option == 6:
+                                pair2Temp_d_p_aug = utils.vertical_flip(pair2Temp_d_p_aug)
+                            elif augumentation_option == 7:
                                 pair2Temp_d_p_aug = utils.rotation(pair2Temp_d_p_aug, AUGUMENTATION_ROTANGLE)
 
                             pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 0, 1))
