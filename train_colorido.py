@@ -28,6 +28,17 @@ CHANNEL_NUMBER = int(settings.channel_number)
 EPOCHS_NUMBER = int(settings.epochs_number)
 BATCH_SIZE = int(settings.batch_size)
 
+#Augumentation
+AUGUMENTATION_HSHIFT = float(settings.augumentation_hshift)
+AUGUMENTATION_VSHIFT = float(settings.augumentation_vshift)
+AUGUMENTATION_BRIGHT_LOW = float(settings.augumentation_bright_low)
+AUGUMENTATION_BRIGHT_HIGH = float(settings.augumentation_bright_high)
+AUGUMENTATION_ZOOM = float(settings.augumentation_zoom)
+AUGUMENTATION_CHNSHIFT = float(settings.augumentation_chnshift)
+AUGUMENTATION_HFLIP = float(settings.augumentation_hflip)
+AUGUMENTATION_VFLIP = float(settings.augumentation_vflip)
+AUGUMENTATION_ROTANGLE = float(settings.augumentation_rotangle)
+
 if not os.path.exists('weights/'):
     os.mkdir('weights/')
 
@@ -38,7 +49,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     net = models.Siamese(channel_number).to(device)
     loss_fn = torch.nn.MarginRankingLoss(0.2)
 
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.00001, eps=1e-08, weight_decay=0.0000005)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
@@ -126,17 +137,45 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                         pair2Temp_d = images2[:,i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
                         pair2TempN_d = images2[:,i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
 
-                        '''pair2Temp_d_p_aug = np.uint8(pair2Temp_d.cpu())
-                        pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 1, 0))
+                        # Augumentation
+                        if random.uniform(0, 1) < 0.5:
+                            pair2Temp_d_p_aug = np.uint8(pair2Temp_d.cpu())
+                            pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 1, 0))
 
-                        if random.uniform(0, 1) < 0.3:
-                            if random.uniform(0, 1) < 0.5:
-                                pair2Temp_d_p_aug = utils.flip(pair2Temp_d_p_aug, True)
-                            else:
-                                pair2Temp_d_p_aug = utils.rotate(pair2Temp_d_p_aug, True)
+                            # Horizontal shift
+                            if random.uniform(0, 1) < 0.3:
+                                pair2Temp_d_p_aug = utils.horizontal_shift(pair2Temp_d_p_aug, AUGUMENTATION_HSHIFT)
+                            
+                            # Vertical shift 
+                            if random.uniform(0, 1) < 0.3:
+                                pair2Temp_d_p_aug = utils.vertical_shift(pair2Temp_d_p_aug, AUGUMENTATION_VSHIFT)
 
-                        pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 0, 1))
-                        pair2Temp_d = torch.tensor(pair2Temp_d_p_aug, dtype=torch.float64).to(device)'''
+                            # Brightness
+                            if random.uniform(0, 1) < 0.3:
+                                pair2Temp_d_p_aug = utils.brightness(pair2Temp_d_p_aug, AUGUMENTATION_BRIGHT_LOW, AUGUMENTATION_BRIGHT_HIGH)
+
+                            # Zoom 
+                            if random.uniform(0, 1) < 0.3:
+                                pair2Temp_d_p_aug = utils.zoom(pair2Temp_d_p_aug, AUGUMENTATION_ZOOM)
+
+                            # Channel Shift
+                            if random.uniform(0, 1) < 0.2:
+                                pair2Temp_d_p_aug = utils.channel_shift(pair2Temp_d_p_aug, AUGUMENTATION_CHNSHIFT)
+
+                            # Horizontal Flip
+                            if random.uniform(0, 1) < AUGUMENTATION_HFLIP:
+                                pair2Temp_d_p_aug = utils.horizontal_flip(pair2Temp_d_p_aug)
+
+                            # Vertical Flip
+                            if random.uniform(0, 1) < AUGUMENTATION_VFLIP:
+                                pair2Temp_d_p_aug = utils.horizontal_flip(pair2Temp_d_p_aug)
+
+                            # Rotation
+                            if random.uniform(0, 1) < 0.3:
+                                pair2Temp_d_p_aug = utils.rotation(pair2Temp_d_p_aug, AUGUMENTATION_ROTANGLE)
+
+                            pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 0, 1))
+                            pair2Temp_d = torch.tensor(pair2Temp_d_p_aug, dtype=torch.float64).to(device)
 
                     else:
                         pair1Temp_d = images1[i-center_height:i+center_height+1,j-center_height:j+center_height+1]

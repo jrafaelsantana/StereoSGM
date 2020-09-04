@@ -29,3 +29,14 @@ class Config:
 
         self.epochs_number = os.getenv('EPOCHS_NUMBER')
         self.batch_size = os.getenv('BATCH_SIZE')
+
+        #Augumentation
+        self.augumentation_hshift = os.getenv('AUGUMENTATION_HSHIFT')
+        self.augumentation_vshift = os.getenv('AUGUMENTATION_VSHIFT')
+        self.augumentation_bright_low = os.getenv('AUGUMENTATION_BRIGHT_LOW')
+        self.augumentation_bright_high = os.getenv('AUGUMENTATION_BRIGHT_HIGH')
+        self.augumentation_zoom = os.getenv('AUGUMENTATION_ZOOM')
+        self.augumentation_chnshift = os.getenv('AUGUMENTATION_CHNSHIFT')
+        self.augumentation_hflip = os.getenv('AUGUMENTATION_HFLIP')
+        self.augumentation_vflip = os.getenv('AUGUMENTATION_VFLIP')
+        self.augumentation_rotangle = os.getenv('AUGUMENTATION_ROTANGLE')
