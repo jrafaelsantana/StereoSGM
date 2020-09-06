@@ -49,7 +49,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     net = models.Siamese(channel_number).to(device)
     loss_fn = torch.nn.MarginRankingLoss(0.2)
 
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.00001, eps=1e-08, weight_decay=0.0000005)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
@@ -138,27 +138,21 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                         pair2TempN_d = images2[:,i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
 
                         # Augumentation
-                        if random.uniform(0, 1) < 0.5:
+                        if random.uniform(0, 1) < 0.3:
                             pair2Temp_d_p_aug = np.uint8(pair2Temp_d.cpu())
                             pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 1, 0))
 
-                            augumentation_option = random.uniform(0, 7)
+                            augumentation_option = random.uniform(0, 4)
 
                             if augumentation_option == 0:
                                 pair2Temp_d_p_aug = utils.horizontal_shift(pair2Temp_d_p_aug, AUGUMENTATION_HSHIFT)
                             elif augumentation_option == 1:
-                                pair2Temp_d_p_aug = utils.vertical_shift(pair2Temp_d_p_aug, AUGUMENTATION_VSHIFT)
-                            elif augumentation_option == 2:
                                 pair2Temp_d_p_aug = utils.brightness(pair2Temp_d_p_aug, AUGUMENTATION_BRIGHT_LOW, AUGUMENTATION_BRIGHT_HIGH)
-                            elif augumentation_option == 3:
+                            elif augumentation_option == 2:
                                 pair2Temp_d_p_aug = utils.zoom(pair2Temp_d_p_aug, AUGUMENTATION_ZOOM)
-                            elif augumentation_option == 4:
+                            elif augumentation_option == 3:
                                 pair2Temp_d_p_aug = utils.channel_shift(pair2Temp_d_p_aug, AUGUMENTATION_CHNSHIFT)
-                            elif augumentation_option == 5:
-                                pair2Temp_d_p_aug = utils.horizontal_flip(pair2Temp_d_p_aug)
-                            elif augumentation_option == 6:
-                                pair2Temp_d_p_aug = utils.vertical_flip(pair2Temp_d_p_aug)
-                            elif augumentation_option == 7:
+                            elif augumentation_option == 4:
                                 pair2Temp_d_p_aug = utils.rotation(pair2Temp_d_p_aug, AUGUMENTATION_ROTANGLE)
 
                             pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 0, 1))
