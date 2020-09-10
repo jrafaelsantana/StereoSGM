@@ -49,7 +49,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     net = models.Siamese(channel_number).to(device)
     loss_fn = torch.nn.MarginRankingLoss(0.2)
 
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.00001, eps=1e-08, weight_decay=0.0000005)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
@@ -90,6 +90,9 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
     # TRAIN
     for epoch in range(0, epochs_number):
+
+        patches_sim = 0
+        patches_nao = 0
 
         if(begin_val == 0):
             net.train()
@@ -139,6 +142,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                         # Augumentation
                         if random.uniform(0, 1) < 0.3:
+                            patches_sim += 1
                             pair2Temp_d_p_aug = np.uint8(pair2Temp_d.cpu())
                             pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 1, 0))
 
@@ -146,8 +150,8 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                             if augumentation_option == 0:
                                 pair2Temp_d_p_aug = utils.horizontal_shift(pair2Temp_d_p_aug, AUGUMENTATION_HSHIFT)
-                            elif augumentation_option == 1:
-                                pair2Temp_d_p_aug = utils.brightness(pair2Temp_d_p_aug, AUGUMENTATION_BRIGHT_LOW, AUGUMENTATION_BRIGHT_HIGH)
+                            #elif augumentation_option == 1:
+                                #pair2Temp_d_p_aug = utils.brightness(pair2Temp_d_p_aug, AUGUMENTATION_BRIGHT_LOW, AUGUMENTATION_BRIGHT_HIGH)
                             elif augumentation_option == 2:
                                 pair2Temp_d_p_aug = utils.zoom(pair2Temp_d_p_aug, AUGUMENTATION_ZOOM)
                             elif augumentation_option == 3:
@@ -157,6 +161,8 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                             pair2Temp_d_p_aug = pair2Temp_d_p_aug.transpose((2, 0, 1))
                             pair2Temp_d = torch.tensor(pair2Temp_d_p_aug, dtype=torch.float64).to(device)
+                        else:
+                            patches_nao += 1
 
                     else:
                         pair1Temp_d = images1[i-center_height:i+center_height+1,j-center_height:j+center_height+1]
@@ -282,8 +288,8 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                 torch.save(net.state_dict(), weight_path)
 
-            print('epoch\t%d loss:\t%.23f val_loss:\t%.5f error:\t%.5f time lapsed:\t%.2f s' % (
-                epoch, avg_loss, avg_val_loss, avg_err, time.time() - time_start))
+            print('epoch\t%d loss:\t%.23f val_loss:\t%.5f sim:\t%d nao:\t%d error:\t%.5f time lapsed:\t%.2f s' % (
+                epoch, avg_loss, avg_val_loss, patches_sim, patches_nao, avg_err, time.time() - time_start))
         else:
             print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' %
                   (epoch, avg_loss, time.time() - time_start))
