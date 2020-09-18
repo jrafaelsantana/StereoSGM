@@ -1,6 +1,8 @@
 import cv2
 import random
 import numpy as np
+import math
+import torch
 
 def fill(img, h, w):
     img = cv2.resize(img, (h, w), cv2.INTER_CUBIC)
@@ -80,4 +82,33 @@ def rotation(img, angle):
     M = cv2.getRotationMatrix2D((int(w/2), int(h/2)), angle, 1)
     img = cv2.warpAffine(img, M, (w, h))
     return img
+
+def make_patch(src, scale, phi, trans, hshear, brightness, contrast, device):
+    c = math.cos(phi)
+    s = math.sin(phi)
+
+    src = np.uint8(src.cpu())
+    src = src.transpose((1, 2, 0))
+
+    rmat = np.array([[c, s, 0], [-s, c, 0], [0, 0, 1]], np.float32) #rotate
+    cmat = np.array([[1, hshear, 0], [0, 1, 0], [0, 0, 1]], np.float32) #shear
+    smat = np.array([[scale[0], 0, 0], [0, scale[1], 0], [0, 0, 1]], np.float32) #scale
+    tmat = np.array([[1, 0, trans[0]], [0, 1, trans[1]], [0, 0, 1]], np.float32) #translate
+      
+    amat = np.dot(tmat, smat)
+    amat = np.dot(cmat,amat)
+    amat = np.dot(rmat,amat)
+
+    amat_ = amat[:2, :]
+
+    rows, cols, ch = src.shape 
+    dst = cv2.warpAffine(src, amat_, (cols,rows))
+    dst = dst * contrast
+    dst = dst + brightness
+    
+    dst = dst.transpose((2, 0, 1))
+    dst = torch.FloatTensor(dst).to(device)
+
+    return dst
+
 

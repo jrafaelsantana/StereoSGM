@@ -9,6 +9,7 @@ import utils
 import random
 import config
 import models
+import math
 
 settings = config.Config()
 
@@ -29,15 +30,23 @@ EPOCHS_NUMBER = int(settings.epochs_number)
 BATCH_SIZE = int(settings.batch_size)
 
 #Augumentation
-AUGUMENTATION_HSHIFT = float(settings.augumentation_hshift)
-AUGUMENTATION_VSHIFT = float(settings.augumentation_vshift)
-AUGUMENTATION_BRIGHT_LOW = float(settings.augumentation_bright_low)
-AUGUMENTATION_BRIGHT_HIGH = float(settings.augumentation_bright_high)
-AUGUMENTATION_ZOOM = float(settings.augumentation_zoom)
-AUGUMENTATION_CHNSHIFT = float(settings.augumentation_chnshift)
-AUGUMENTATION_HFLIP = float(settings.augumentation_hflip)
-AUGUMENTATION_VFLIP = float(settings.augumentation_vflip)
-AUGUMENTATION_ROTANGLE = float(settings.augumentation_rotangle)
+HSCALE = float(settings.HSCALE)
+SCALE = float(settings.SCALE)
+HFLIP = float(settings.HFLIP)
+VFLIP = float(settings.VFLIP)
+HSHEAR = float(settings.HSHEAR)
+TRANS = float(settings.TRANS)
+ROTATE = float(settings.ROTATE)
+BRIGHTNESS = float(settings.BRIGHTNESS)
+CONTRAST = float(settings.CONTRAST)
+D_CONTRAST = float(settings.D_CONTRAST)
+D_HSCALE = float(settings.D_HSCALE)
+D_HSHEAR = float(settings.D_HSHEAR)
+D_VTRANS = float(settings.D_VTRANS)
+D_ROTATE = float(settings.D_ROTATE)
+D_BRIGHTNESS = float(settings.D_BRIGHTNESS)
+D_EXP = float(settings.D_EXP)
+D_LIGHT = float(settings.D_LIGHT)
 
 if not os.path.exists('weights/'):
     os.mkdir('weights/')
@@ -91,9 +100,6 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     # TRAIN
     for epoch in range(0, epochs_number):
 
-        patches_sim = 0
-        patches_nao = 0
-
         if(begin_val == 0):
             net.train()
 
@@ -136,9 +142,40 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     images2 = pair_list[img_idx][1]
 
                     if channel_number == 3:
-                        pair1Temp_d = images1[:,i-center_height:i+center_height+1,j-center_height:j+center_height+1]
-                        pair2Temp_d = images2[:,i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
-                        pair2TempN_d = images2[:,i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
+                        # New augumentation
+
+                        assert(HSCALE <= 1 and SCALE <= 1)
+
+                        s = random.uniform(SCALE, 1)
+                        scale = [s * random.uniform(HSCALE, 1), s]
+
+                        if HFLIP == 1 and random.uniform() < 0.5:
+                            scale[0] = -scale[0]
+                        
+                        if VFLIP == 1 and random.uniform() < 0.5:
+                            scale[1] = -scale[1]
+                        
+                        hshear = random.uniform(-HSHEAR, HSHEAR)
+                        trans = [random.uniform(-TRANS, TRANS), random.uniform(-TRANS, TRANS)]
+                        phi = random.uniform(-ROTATE * math.pi / 180, ROTATE * math.pi / 180)
+                        brightness = random.uniform(-BRIGHTNESS, BRIGHTNESS)
+                        
+                        assert(CONTRAST >= 1 and D_CONTRAST >= 1)
+                        contrast = random.uniform(1 / CONTRAST, CONTRAST)
+
+                        scale_ = [scale[0] * random.uniform(D_HSCALE, 1), scale[1]]
+                        hshear_ = hshear + random.uniform(-D_HSHEAR, D_HSHEAR)
+                        trans_ = [trans[0], trans[1] + random.uniform(-D_VTRANS, D_VTRANS)]
+                        phi_ = phi + random.uniform(-D_ROTATE * math.pi / 180, D_ROTATE * math.pi / 180)
+                        brightness_ = brightness + random.uniform(-D_BRIGHTNESS, D_BRIGHTNESS)
+                        contrast_ = contrast * random.uniform(1 / D_CONTRAST, D_CONTRAST)
+
+                        images1_ = utils.make_patch(images1, scale, phi, trans, hshear, brightness, contrast, device)
+                        images2_ = utils.make_patch(images2, scale_, phi_, trans_, hshear_, brightness_, contrast_, device)
+
+                        pair1Temp_d = images1_[:,i-center_height:i+center_height+1,j-center_height:j+center_height+1]
+                        pair2Temp_d = images2_[:,i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
+                        pair2TempN_d = images2_[:,i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
 
                         # Augumentation
                         '''if random.uniform(0, 1) < 0.3:
@@ -288,8 +325,8 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                 torch.save(net.state_dict(), weight_path)
 
-            print('epoch\t%d loss:\t%.23f val_loss:\t%.5f sim:\t%d nao:\t%d error:\t%.5f time lapsed:\t%.2f s' % (
-                epoch, avg_loss, avg_val_loss, patches_sim, patches_nao, avg_err, time.time() - time_start))
+            print('epoch\t%d loss:\t%.23f val_loss:\t%.5f error:\t%.5f time lapsed:\t%.2f s' % (
+                epoch, avg_loss, avg_val_loss, avg_err, time.time() - time_start))
         else:
             print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' %
                   (epoch, avg_loss, time.time() - time_start))
