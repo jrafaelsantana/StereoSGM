@@ -83,7 +83,7 @@ def rotation(img, angle):
     img = cv2.warpAffine(img, M, (w, h))
     return img
 
-def make_patch(src, scale, phi, trans, hshear, brightness, contrast, device):
+'''def make_patch(src, scale, phi, trans, hshear, brightness, contrast, device):
     c = math.cos(phi)
     s = math.sin(phi)
 
@@ -109,6 +109,46 @@ def make_patch(src, scale, phi, trans, hshear, brightness, contrast, device):
     dst = dst.transpose((2, 0, 1))
     dst = torch.FloatTensor(dst).to(device)
 
-    return dst
+    return dst'''
 
 
+def make_patch(src, patch_height, i, j, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0, flipH = 1):
+        rows, cols, ch = src.shape
+        #src = src.transpose((1, 2, 0))
+        
+        c = math.cos(phi)
+        s = math.sin(phi)
+        
+        if(flipH == -1):
+            fmat = np.array([[flipH, 0, patch_height-1], [0, 1, 0], [0, 0, 1]], np.float32)
+        else:
+            fmat = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], np.float32)
+
+        jmat = np.array([[1, 0, -j], [0, 1, -i], [0, 0, 1]], np.float32)
+
+        rmat = np.array([[c, s, 0], [-s, c, 0], [0, 0, 1]], np.float32)
+        cmat = np.array([[1, hshear, 0], [0, 1, 0], [0, 0, 1]], np.float32)
+        smat = np.array([[scale[0], 0, 0], [0, scale[1], 0], [0, 0, 1]], np.float32)
+        tmat = np.array([[1, 0, trans[0]], [0, 1, trans[1]], [0, 0, 1]], np.float32)
+        jfmat = np.array([[1, 0, int(patch_height/2)], [0, 1, int(patch_height/2)], [0, 0, 1]], np.float32)       
+        
+        amat = np.dot(jmat,fmat)
+        amat = np.dot(tmat,amat)        
+        amat = np.dot(smat,amat)
+        amat = np.dot(cmat,amat)
+        amat = np.dot(rmat,amat)        
+        amat = np.dot(jfmat,amat)
+        
+        amat_ = amat[:2, :]
+        
+        dst = cv2.warpAffine(src, amat_, (cols,rows))
+        
+        dst = dst * contrast
+        dst = dst + brightness
+
+        if len(dst.shape) == 2:
+            dst = np.expand_dims(dst, axis=2)
+
+        #dst = dst.transpose((2, 0, 1))
+        
+        return dst

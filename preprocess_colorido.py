@@ -3,11 +3,10 @@ import cv2
 import numpy as np
 import torch
 import random
-from utils import load_pfm, write_pfm
+from utils import load_pfm, write_pfm, save_obj
 import math
 import config
 from pathlib import Path
-from utils import save_obj, census_transformation
 
 if not os.path.exists('./obj'):
     os.mkdir('./obj')
@@ -55,6 +54,9 @@ def generate_patches_training(
             left = cv2.imread(directory._str + '/im0.png', 0)
             right = cv2.imread(directory._str + '/im1.png', 0)
 
+        left = (left - left.mean()) / left.std()
+        right = (right - right.mean()) / right.std()
+
         img_left = left.astype(np.float32)
         img_right = right.astype(np.float32)
 
@@ -82,7 +84,7 @@ def generate_patches_training(
         sample_index = 0
 
         while (total < qt_correct and sample_index < total_pixel):
-            i = int(sample[sample_index]/img_left.shape[1])
+            i = int(sample[sample_index] / img_left.shape[1])
             j = int(sample[sample_index] % img_left.shape[1])
 
             start_x = j-center_height
@@ -100,9 +102,6 @@ def generate_patches_training(
                             d_I = -dataset_neg_high
 
                             while(d_I < dataset_neg_high):
-                                '''pair2Temp = img_right[i-center_height:i+center_height +
-                                                    1, j-center_height-d_r+d_I:j+center_height+1-d_r+d_I]'''
-
                                 d_I = d_I + 1
 
                             points.append((i, j, d, index_pair))
