@@ -32,7 +32,7 @@ def generate_patches_training(
     center_width,
     qt_correct,
     channel_number=1,
-    dataset_neg_high=20.0,
+    dataset_neg_high=25.0,
     dataset_pos=0.5
 ):
 

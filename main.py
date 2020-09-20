@@ -74,6 +74,10 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
     width = left.shape[1]
     c = int(patch_height/2)
 
+    if (channel_number == 1):
+        left = np.expand_dims(left, axis=2)
+        right = np.expand_dims(right, axis=2)
+
     left = left.transpose((2, 0, 1))
     right = right.transpose((2, 0, 1))
 

@@ -164,13 +164,26 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     brightness_ = brightness + random.uniform(-D_BRIGHTNESS, D_BRIGHTNESS)
                     contrast_ = contrast * random.uniform(1 / D_CONTRAST, D_CONTRAST)
 
+                    # print(j)
+                    # print(d)
+                    # print(pos_d)
+                    # print(neg_d)
+                    # print(j + pos_d)
+                    # print(j + neg_d)
+                    # print()
+
                     patch1 = utils.make_patch(images1, patch_height, i, j, scale, phi, trans, hshear, brightness, contrast)
-                    patch2 = utils.make_patch(images2, patch_height, i, j - d + pos_d, scale_, phi_, trans_, hshear_, brightness_, contrast_)
-                    patch3 = utils.make_patch(images2, patch_height, i, j - d + neg_d, scale_, phi_, trans_, hshear_, brightness_, contrast_)
+                    patch2 = utils.make_patch(images2, patch_height, i, j + pos_d, scale_, phi_, trans_, hshear_, brightness_, contrast_)
+                    patch3 = utils.make_patch(images2, patch_height, i, j + neg_d, scale_, phi_, trans_, hshear_, brightness_, contrast_)
 
                     pair1Temp_d = patch1[0:patch_height, 0:patch_height]
                     pair2Temp_d = patch2[0:patch_height, 0:patch_height]
                     pair2TempN_d = patch3[0:patch_height, 0:patch_height]
+
+                    # cv2.imshow('referencia', np.uint8(pair1Temp_d))
+                    # cv2.imshow('correta', np.uint8(pair2Temp_d))
+                    # cv2.imshow('incorreta', np.uint8(pair2TempN_d))
+                    # cv2.waitKey()
 
                     '''if channel_number == 3:
                         patch1 = utils.make_patch(images1, center_height, i, j, scale, phi, trans, hshear, brightness, contrast)
@@ -209,7 +222,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                         pair1Temp_d = images1[i-center_height:i+center_height+1,j-center_height:j+center_height+1]
                         pair2Temp_d = images2[i-center_height:i+center_height+1,j-center_height+pos_d:j+center_height+pos_d+1]
                         pair2TempN_d = images2[i-center_height:i+center_height+1,j-center_height+neg_d:j+center_height+neg_d+1]'''
-                            
+
                     images1_batch[2*patch_id+patch_order] = pair1Temp_d
                     images2_batch[2*patch_id+patch_order] = pair2Temp_d
                     images1_batch[2*patch_id+1-patch_order] = pair1Temp_d
@@ -289,7 +302,11 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                         pair1Temp_d = images1[i-center_height:i+center_height+1,j-center_height:j+center_height+1]
                         pair2Temp_d = images2[i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
-                        pair2TempN_d = images2[i-center_height:i+center_height+1,j + neg_d - center_height: j + neg_d + center_height + 1 ]
+                        pair2TempN_d = images2[i-center_height:i+center_height+1,j + neg_d - center_height:j + neg_d + center_height + 1 ]
+
+                        pair1Temp_d = images1[i-center_height:i+center_height+1,j-center_height:j+center_height+1]
+                        pair2Temp_d = images2[i-center_height:i+center_height+1,j + pos_d - center_height:j + pos_d + center_height + 1]
+                        pair2TempN_d = images2[i-center_height:i+center_height+1,j + neg_d - center_height:j + neg_d + center_height + 1 ]
 
                         '''if channel_number == 3:
                             pair1Temp_d = images1[:,i-center_height:i+center_height+1,j-center_height:j+center_height+1]
@@ -367,8 +384,8 @@ if __name__ == "__main__":
         points_valid = points_valid,
         device = DEVICE,
         weight_path = weight_path,
-        dataset_neg_low = 1.5,
-        dataset_neg_high = 6,
+        dataset_neg_low = 3,
+        dataset_neg_high = 10,
         dataset_pos = 0.5,
         center_height = CENTER_PATCH_HEIGHT,
         center_width = CENTER_PATCH_WIDTH,

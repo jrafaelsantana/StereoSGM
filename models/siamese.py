@@ -10,19 +10,19 @@ class Siamese(nn.Module):
         super(Siamese, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(chn, 64, 3, padding=padding_parameter),  # 64@96*96
-            nn.ReLU(),
+            nn.ReLU(inplace = True),
 
             nn.Conv2d(64, 64, 3, padding=padding_parameter),
-            nn.ReLU(),    # 128@42*42
+            nn.ReLU(inplace = True),    # 128@42*42
 
             nn.Conv2d(64, 128, 3, padding=padding_parameter),
-            nn.ReLU(),    # 128@18*18
+            nn.ReLU(inplace = True),    # 128@18*18
 
             nn.Conv2d(128, 128, 1, padding=padding_parameter),
         )
 
         #self.liner = nn.Sequential(nn.Linear(256, 1), nn.Sigmoid())
-        self.linear = nn.Sequential(nn.Linear(128, 1))
+        self.linear = nn.Sequential(nn.Linear(128, 1), nn.Sigmoid())
         self.gn = GroupNorm(1,1,0)
 
     def forward_one(self, x):
