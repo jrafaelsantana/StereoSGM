@@ -48,8 +48,8 @@ def generate_patches_training(
         total = 0
 
         if channel_number == 3:
-            left = cv2.imread(directory._str + '/im0.png')
-            right = cv2.imread(directory._str + '/im1.png')
+            left = cv2.imread(directory._str + '/im0.png', cv2.COLOR_BGR2RGB)
+            right = cv2.imread(directory._str + '/im1.png', cv2.COLOR_BGR2RGB)
         else:
             left = cv2.imread(directory._str + '/im0.png', 0)
             right = cv2.imread(directory._str + '/im1.png', 0)
@@ -99,13 +99,21 @@ def generate_patches_training(
                         if((j - d_r - dataset_pos - center_width) >= 0 and (j - d_r - dataset_neg_high - center_width) >= 0 and (j - d_r + dataset_pos + center_width) < img_left.shape[1] and (j - d_r + dataset_neg_high + center_width) < img_left.shape[1]):
                             dataset_neg_high = int(dataset_neg_high)
 
+                            desvio_alto = True
                             d_I = -dataset_neg_high
 
-                            while(d_I < dataset_neg_high):
+                            while(desvio_alto and d_I < dataset_neg_high):
+                                pair2Temp = img_right[i-center_height:i+center_height+1,j-center_height-d_r+d_I:j+center_height+1-d_r+d_I]
                                 d_I = d_I + 1
 
-                            points.append((i, j, d, index_pair))
-                            total = total + 1
+                                pair2TempVar = np.std(pair2Temp) 
+                                
+                                if(pair2TempVar <= 0.40): 
+                                    desvio_alto = False
+
+                            if(desvio_alto == True):
+                                points.append((i,j,d,index_pair))
+                                total = total + 1
 
                 sample_index = sample_index + 1
             else:

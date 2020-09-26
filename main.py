@@ -120,8 +120,6 @@ def calc_costs(out1, out2, max_disparity, width, height):
                 result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
                     
                 costs[y, x, nd] = result
-
-    costs[:]
     
     return costs
 
@@ -241,11 +239,14 @@ def sgm(directory):
     gt_file = utils.load_pfm(directory._str + '/disp0GT.pfm')
 
     if CHANNEL_NUMBER == 3:
-        left = cv2.imread(directory._str + '/im0.png')
-        right = cv2.imread(directory._str + '/im1.png')
+        left = cv2.imread(directory._str + '/im0.png', cv2.COLOR_BGR2RGB)
+        right = cv2.imread(directory._str + '/im1.png', cv2.COLOR_BGR2RGB)
     else:
         left = cv2.imread(directory._str + '/im0.png', 0)
         right = cv2.imread(directory._str + '/im1.png', 0)
+
+    left = (left - left.mean()) / left.std()
+    right = (right - right.mean()) / right.std()
 
     costs = compute_costs(left, right, max_disparity,
                           PATCH_HEIGHT, PATCH_WIDTH, CHANNEL_NUMBER, DEVICE)
