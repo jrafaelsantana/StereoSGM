@@ -60,7 +60,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     assert(CONTRAST >= 1 and D_CONTRAST >= 1)
     
     net = models.Siamese(channel_number).to(device)
-    loss_fn = torch.nn.MarginRankingLoss(0.2)
+    loss_fn = torch.nn.MarginRankingLoss(0.2).to(device)
 
     optimizer = torch.optim.Adam(net.parameters(), lr=0.000001, eps=1e-08, weight_decay=0.0000005)
 
@@ -119,9 +119,9 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
             for batch_id in sample:
                 batch_temp = len(points_split[batch_id])
 
-                images1_batch = torch.zeros((2*batch_temp, channel_number, patch_height, patch_width)).to(device)
-                images2_batch = torch.zeros((2*batch_temp, channel_number, patch_height, patch_width)).to(device)
-                target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_temp).to(device)
+                images1_batch = torch.zeros((2*batch_temp, channel_number, patch_height, patch_width), device=device)
+                images2_batch = torch.zeros((2*batch_temp, channel_number, patch_height, patch_width), device=device)
+                target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_temp, device=device)
 
                 patch_sample = random.sample(range(0, batch_temp, 1), int(batch_temp))
                 patch_order = 0
@@ -222,15 +222,14 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
             with torch.no_grad():
                 total_batches_valid = len(points_valid_split)
-                sample_valid = random.sample(
-                    range(0, total_batches_valid), total_batches_valid)
+                sample_valid = random.sample(range(0, total_batches_valid), total_batches_valid)
 
                 for batch_id in sample_valid:
                     batch_temp = len(points_valid_split[batch_id])
 
-                    images1_batch = torch.zeros((2*batch_temp, channel_number, patch_width, patch_height)).to(device)
-                    images2_batch = torch.zeros((2*batch_temp, channel_number, patch_width, patch_height)).to(device)
-                    target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_temp).to(device)
+                    images1_batch = torch.zeros((2*batch_temp, channel_number, patch_width, patch_height), device=device)
+                    images2_batch = torch.zeros((2*batch_temp, channel_number, patch_width, patch_height), device=device)
+                    target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_temp, device=device)
 
                     patch_sample = random.sample(range(0, batch_temp, 1), int(batch_temp))
                     patch_order = 1
