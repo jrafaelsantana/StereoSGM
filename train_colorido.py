@@ -147,10 +147,10 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     images2 = pair_list[img_idx, 1]
 
                     # New augumentation
-                    #s = random.uniform(SCALE, 1)
-                    s = 1
-                    scale = [1,1]
-                    #scale = [s * random.uniform(HSCALE, 1), s]
+                    s = random.uniform(SCALE, 1)
+                    #s = 1
+                    #scale = [1,1]
+                    scale = [s * random.uniform(HSCALE, 1), s]
                         
                     #hshear = random.uniform(-HSHEAR, HSHEAR)
                     hshear = 0
@@ -162,8 +162,8 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     
                     contrast = random.uniform(1 / CONTRAST, CONTRAST)
 
-                    #scale_ = [scale[0] * random.uniform(D_HSCALE, 1), scale[1]]
-                    scale_ = [1,1]
+                    scale_ = [scale[0] * random.uniform(D_HSCALE, 1), scale[1]]
+                    #scale_ = [1,1]
                     #hshear_ = hshear + random.uniform(-D_HSHEAR, D_HSHEAR)
                     hshear_ = 0
                     #trans_ = [trans[0], trans[1] + random.uniform(-D_VTRANS, D_VTRANS)]
@@ -319,8 +319,8 @@ if __name__ == "__main__":
         points_valid = points_valid,
         device = DEVICE,
         weight_path = weight_path,
-        dataset_neg_low = 10,
-        dataset_neg_high = 25,
+        dataset_neg_low = 1.5,
+        dataset_neg_high = 6,
         dataset_pos = 0.5,
         center_height = CENTER_PATCH_HEIGHT,
         center_width = CENTER_PATCH_WIDTH,
