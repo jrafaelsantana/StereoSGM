@@ -152,8 +152,8 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     scale = [1,1]
                     #scale = [s * random.uniform(HSCALE, 1), s]
                         
-                    hshear = random.uniform(-HSHEAR, HSHEAR)
-                    #hshear = 0
+                    #hshear = random.uniform(-HSHEAR, HSHEAR)
+                    hshear = 0
                     #trans = [random.uniform(-TRANS, TRANS), random.uniform(-TRANS, TRANS)]
                     trans = [0,0]
                     phi = random.uniform(-ROTATE * math.pi / 180, ROTATE * math.pi / 180)
@@ -164,8 +164,8 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                     #scale_ = [scale[0] * random.uniform(D_HSCALE, 1), scale[1]]
                     scale_ = [1,1]
-                    hshear_ = hshear + random.uniform(-D_HSHEAR, D_HSHEAR)
-                    #hshear_ = 0
+                    #hshear_ = hshear + random.uniform(-D_HSHEAR, D_HSHEAR)
+                    hshear_ = 0
                     #trans_ = [trans[0], trans[1] + random.uniform(-D_VTRANS, D_VTRANS)]
                     trans_ = [0,0]
                     phi_ = phi + random.uniform(-D_ROTATE * math.pi / 180, D_ROTATE * math.pi / 180)
