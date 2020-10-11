@@ -2,118 +2,126 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+
+import utils
 from .groupnorm import GroupNorm
+from utils import cropND
 
 class Siamese(nn.Module):
 
     def __init__(self, chn=1, padding_parameter=0):
         super(Siamese, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(chn, 64, 3, padding=padding_parameter),  # 64@96*96
+        self.conv_7 = nn.Sequential(
+            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
             nn.ReLU(),
 
             nn.Conv2d(64, 64, 3, padding=padding_parameter),
-            nn.ReLU(),    # 128@42*42
+            nn.ReLU(),
 
             nn.Conv2d(64, 128, 3, padding=padding_parameter),
-            nn.ReLU(),    # 128@18*18
+            nn.ReLU(),
 
             nn.Conv2d(128, 128, 1, padding=padding_parameter)
         )
 
-        #self.liner = nn.Sequential(nn.Linear(256, 1), nn.Sigmoid())
-        #self.linear = nn.Sequential(nn.Linear(128, 1), nn.Sigmoid())
-        self.gn = GroupNorm(1,1,0)
-        #self.norm  = nn.BatchNorm2d(256)
+        self.conv_15 = nn.Sequential(
+            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
+            nn.ReLU(),
 
-    def forward_one(self, x):
-        x = self.conv(x)
-        #x = F.normalize(x, dim=1, p=2)
-        #x = x.view(x.size()[0], -1)
-        #x = self.liner(x)
+            nn.Conv2d(64, 64, 3, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(64, 64, 3, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(64, 128, 3, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, 3, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, 3, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, 3, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, 1, padding=padding_parameter)
+        )
+
+        self.gn = GroupNorm(1,1,0)
+
+    def forward_one_7(self, x):
+        x = self.conv_7(x)
         return x
 
-    def forward(self, x1, x2, training = True):
-        #x1 = self.gn(x1)
-        out1 = self.forward_one(x1)
-        #out1 = self.norm(out1)
+    def forward_one_15(self, x):
+        x = self.conv_15(x)
+        return x
+
+    def forward(self, x1, x2, training = True):  
+        out1 = self.forward_one_15(x1)
         out1 = self.gn(out1)
 
-        #x2 = self.gn(x2)
-        out2 = self.forward_one(x2)
-        #out2 = self.norm(out2)
+        out2 = self.forward_one_15(x2)
         out2 = self.gn(out2)
 
         if training:
             out1 = out1.view(out1.size()[0], -1)
             out2 = out2.view(out2.size()[0], -1)
 
-            #out1 = out1.view(out1.size()[0], -1, out1.size()[1])
-            #out2 = out2.view(out2.size()[0], out2.size()[1], -1)
-            #out = torch.abs(torch.sum(out1 * out2, 1))
-            out = torch.sqrt(torch.sum((out1 - out2) * (out1 - out2), 1))
-            #out = torch.sqrt(torch.sum(torch.pow(out1 * out2, 2),1))
-            #out = torch.sum((out1 - out2) * (out1 - out2), 1)
+            batch_size, channel_size, width, height = x1.shape
+            width_small = int(width/2)
+            height_small = int(height/2)
+                
+            x1_small = utils.cropND(x1, (batch_size, channel_size, width_small, height_small))
+            x2_small = utils.cropND(x2, (batch_size, channel_size, width_small, height_small))
 
-            #print(out1.shape)
-            #print(out2.shape)
-            #out = torch.abs(out1 - out2)
-            #out = torch.abs(torch.sum((out1 - out2), 1))
-            #print(out.shape)
+            out1_small = self.forward_one_7(x1_small)
+            out1_small = self.gn(out1_small)
 
-            return out
+            out2_small = self.forward_one_7(x2_small)
+            out2_small = self.gn(out2_small)
+
+            out1_small = out1_small.view(out1_small.size()[0], -1)
+            out2_small = out2_small.view(out2_small.size()[0], -1)
+
+            #out = torch.sqrt(torch.sum((out1 - out2) * (out1 - out2), 1))
+            #out_small = torch.sqrt(torch.sum((out1_small - out2_small) * (out1_small - out2_small), 1))
+
+            #calc = out + out_small
+
+            # print(out1.shape)
+            # print(out2.shape)
+
+            # calc = torch.dot(out1, out2)
+            # calc = torch.dot(calc, out1_small)
+            # calc = torch.dot(calc, out2_small)
+
+            # print(calc.shape)
+            # input()
+
+            # calc = torch.sum(out1 * out2 * out1_small * out2_small, 1)
+            calc1 = torch.sum(out1 * out2, 1)
+            calc2 = torch.sum(out1_small * out2_small, 1)
+            calc = calc1 + calc2
+
+            # print(calc1.shape)
+            # input()
+
+            # out = torch.sum(calc1 + calc2, 
+            # print(out.shape)
+            # input()
+
+            return calc
         else:
-            return out1, out2
+            out1_small = self.forward_one_7(x1)
+            out1_small = self.gn(out1_small)
 
+            out2_small = self.forward_one_7(x2)
+            out2_small = self.gn(out2_small)
 
-        # print(x1.shape)
-        
-        
-        #out1 = out1.view(out1.size()[0], -1)
-        
-        #qn = torch.norm(out1, p=2, dim=1, keepdim=True).detach()
-        # print(qn.shape)
-        # print(qn.expand_as(out1))
-        # input()
-        #out1 = out1.div(qn.expand_as(out1))
-        #out1 = F.normalize(out1, dim=1, p=2)
-        
-        #out2 = out2.view(out2.size()[0], -1)
-        #qn = torch.norm(out2, p=2, dim=1,keepdim=True).detach()
-        #out2 = out2.div(qn.expand_as(out2))
-        #out2 = F.normalize(out2, dim=1, p=2)
-
-        # net_te = net_tr:clone('weight', 'bias')
-
-        #out1 = out1.view(out1.size()[0], -1, out1.size()[1])
-        #out2 = out2.view(out2.size()[0], out2.size()[1], -1)
-
-        #dis = torch.abs(out1 - out2)
-        
-        #Anterior
-        #out = torch.sum((out1 - out2) * (out1 - out2), 1)
-        
-        #dis = torch.cat((out1,out2),0)
-        #dis = self.liner(dis)
-
-        #out = self.out(dis)
-
-        # print(out1.shape)
-
-
-        #dis = torch.bmm(out1, out2)
-        #dis = torch.abs(out1 - out2)
-        #dis = torch.dot(out1,out2)
-        #out = torch.sum(torch.mul(out1,out2),dim=1)
-        # print(pd.shape)
-        #dis = torch.sum(pd, dim=1)
-        # print(dis.shape)
-        #out = dis.view(dis.size()[0], -1)
-        # print(dis.shape)
-
-        #out = dis
-        #return out1, out2
-        #return out
+            return out1_small, out2_small, out1, out2
 
 
 def weights_init_uniform_rule(m):

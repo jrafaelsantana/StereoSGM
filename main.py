@@ -30,8 +30,8 @@ CENTER_PATCH_HEIGHT = int(PATCH_HEIGHT/2)
 QTY_CORRECT_TRAIN = int(settings.train_correct)
 QTY_INCORRECT_TRAIN = int(settings.train_incorrect)
 CHANNEL_NUMBER = int(settings.channel_number)
-PENALTY_EQUAL_1 = int(settings.penalty_equal_1)
-PENALTY_BIGGER_THEN_1 = int(settings.penalty_bigger_than_1)
+PENALTY_EQUAL_1 = float(settings.penalty_equal_1)
+PENALTY_BIGGER_THEN_1 = float(settings.penalty_bigger_than_1)
 
 weight_path = 'weights/trainedweight.pth'
 
@@ -59,7 +59,6 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
     """
 
     print('Computing costs...')
-    begin_time = datetime.datetime.now()
 
     net = models.Siamese(channel_number,1).to(device)
 
@@ -88,22 +87,25 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
     right = right.unsqueeze(0)
 
     with torch.no_grad():
-
-        out1, out2 = net(left, right, training=False)
+        begin_time = datetime.datetime.now()
+        out1_small, out2_small, out1, out2 = net(left, right, training=False)
         print("Run CNN: {}".format(datetime.datetime.now() - begin_time))
 
         begin_time = datetime.datetime.now()
         
         out1 = out1.squeeze().cpu().numpy()
         out2 = out2.squeeze().cpu().numpy()
-        costs = calc_costs(out1, out2, max_disparity, width, height)
+        out1_small = out1_small.squeeze().cpu().numpy()
+        out2_small = out2_small.squeeze().cpu().numpy()
+
+        costs = calc_costs(out1, out2, out1_small, out2_small, max_disparity, width, height)
         
         print("Costs: {}".format(datetime.datetime.now() - begin_time))
 
         return costs
 
 @jit(nopython=True)
-def calc_costs(out1, out2, max_disparity, width, height):
+def calc_costs(out1, out2, out1_small, out2_small, max_disparity, width, height):
     costs = np.zeros((height, width, max_disparity), dtype=np.float32)
 
     for y in range(0, height - 1):
@@ -111,16 +113,33 @@ def calc_costs(out1, out2, max_disparity, width, height):
 
         for x in range(0, width - 1):
             point_l = out1[:, y, x]
+            point_l_small = out1_small[:, y, x]
 
             for nd in range(0, max_disparity):
                 point_r = out2[:, y, x-nd]
+                point_r_small = out2_small[:, y, x-nd]
                 #result = np.sum((point_l - point_r) * (point_l - point_r))
                 #result = np.abs(np.sum(point_l * point_r))
                 #result = -np.sqrt(np.sum(np.power(point_l * point_r, 2)))
                 result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
+                result_small = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
+
+                #calc1 = point_l @ point_r
+                #calc2 = point_l_small @ point_r_small
+                #calc = calc1 + calc2
+
+                # print(calc)
+                # print(calc1)
+                # print(calc2)
+                # print()
+                # input()
+
+                #result = np.sum((point_l * point_r) + (point_l_small * point_r_small))
+                #print(result)
+                #input()
                     
-                costs[y, x, nd] = result
-    
+                costs[y, x, nd] = result + result_small
+
     return costs
 
 

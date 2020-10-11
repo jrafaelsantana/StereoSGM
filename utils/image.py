@@ -1,6 +1,6 @@
 from numpy import zeros, pad, uint8, float64
 from cv2 import normalize, NORM_MINMAX, imread
-
+import operator
 
 def load_images(left_name, right_name):
     """
@@ -62,3 +62,17 @@ def census_transformation(image, census_kernel):
             census[i, j] = ce
 
     return census
+
+def cropND(img, bounding):
+    """
+    Crop center of numpy array
+
+    :param img: numpy array [C,W,H]
+    :param bounding: tuple of dimensions
+
+    :return: numpy array
+    """
+    start = tuple(map(lambda a, da: a//2-da//2, img.shape, bounding))
+    end = tuple(map(operator.add, start, bounding))
+    slices = tuple(map(slice, start, end))
+    return img[slices]
