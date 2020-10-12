@@ -86,8 +86,8 @@ class Siamese(nn.Module):
             out1_small = out1_small.view(out1_small.size()[0], -1)
             out2_small = out2_small.view(out2_small.size()[0], -1)
 
-            #out = torch.sqrt(torch.sum((out1 - out2) * (out1 - out2), 1))
-            #out_small = torch.sqrt(torch.sum((out1_small - out2_small) * (out1_small - out2_small), 1))
+            out = torch.sqrt(torch.sum((out1 - out2) * (out1 - out2), 1))
+            out_small = torch.sqrt(torch.sum((out1_small - out2_small) * (out1_small - out2_small), 1))
 
             #calc = out + out_small
 
@@ -102,9 +102,9 @@ class Siamese(nn.Module):
             # input()
 
             # calc = torch.sum(out1 * out2 * out1_small * out2_small, 1)
-            calc1 = torch.sum(out1 * out2, 1)
-            calc2 = torch.sum(out1_small * out2_small, 1)
-            calc = calc1 + calc2
+            #calc1 = torch.sum(out1 * out2, 1)
+            #calc2 = torch.sum(out1_small * out2_small, 1)
+            #calc = calc1 + calc2
 
             # print(calc1.shape)
             # input()
@@ -113,7 +113,7 @@ class Siamese(nn.Module):
             # print(out.shape)
             # input()
 
-            return calc
+            return out + out_small
         else:
             out1_small = self.forward_one_7(x1)
             out1_small = self.gn(out1_small)
