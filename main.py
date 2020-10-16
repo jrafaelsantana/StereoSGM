@@ -121,8 +121,14 @@ def calc_costs(out1, out2, out1_small, out2_small, max_disparity, width, height)
                 #result = np.sum((point_l - point_r) * (point_l - point_r))
                 #result = np.abs(np.sum(point_l * point_r))
                 #result = -np.sqrt(np.sum(np.power(point_l * point_r, 2)))
-                result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
-                result_small = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
+
+                calc1 = point_l_small * point_l
+                calc2 = point_r_small * point_r
+
+                result = np.sqrt(np.sum((calc1 - calc2) * (calc1 - calc2)))
+
+                #result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
+                #result_small = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
 
                 #calc1 = point_l @ point_r
                 #calc2 = point_l_small @ point_r_small
@@ -138,7 +144,7 @@ def calc_costs(out1, out2, out1_small, out2_small, max_disparity, width, height)
                 #print(result)
                 #input()
                     
-                costs[y, x, nd] = result + result_small
+                costs[y, x, nd] = result
 
     return costs
 
@@ -253,7 +259,7 @@ def select_best_disparity(aggregation_cost, max_disparity):
 def sgm(directory):
     paths = Paths()
 
-    height, width, max_disparity = utils.parseCalib(directory._str + '/calib.txt')
+    height, width, max_disparity, cam1, cam2 = utils.parseCalib(directory._str + '/calib.txt')
 
     gt_file = utils.load_pfm(directory._str + '/disp0GT.pfm')
 

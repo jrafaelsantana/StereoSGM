@@ -63,6 +63,19 @@ def parseCalib(filename):
     lines = f.readlines()
     f.close()
 
+    cam1 = lines[0].strip()
+    idx = cam1.find('=')
+    cam1 = cam1[idx+1:]
+    cam1 = cam1.replace('[', '').replace(']', '').replace(';', '')
+    cam1 = np.array(cam1.split(' ')).reshape(3, 3)
+
+
+    cam2 = lines[1].strip()
+    idx = cam2.find('=')
+    cam2 = cam2[idx+1:]
+    cam2 = cam2.replace('[', '').replace(']', '').replace(';', '')
+    cam2 = np.array(cam2.split(' ')).reshape(3, 3)
+
     line = lines[4].strip()
     idx = line.find('=')
     width = int(line[idx+1:])
@@ -74,7 +87,8 @@ def parseCalib(filename):
     line = lines[6].strip()
     idx = line.find('=')
     ndisp = int(line[idx+1:])
-    return height, width, ndisp
+
+    return height, width, ndisp, cam1, cam2
 
 
 def normal(mean, std_dev):

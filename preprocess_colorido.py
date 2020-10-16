@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import torch
 import random
-from utils import load_pfm, write_pfm, save_obj
+from utils import load_pfm, save_obj, parseCalib
 import math
 import config
 from pathlib import Path
@@ -69,6 +69,7 @@ def generate_patches_training(
         # img_right_d = (img_right - mean_right)/var_right
 
         pfm_data = load_pfm(directory._str + '/disp0GT.pfm')
+
         # teste = pfm_data.astype('float32')
 
         # #cv2.imwrite('testevcs.pfm', teste, cv2.CV_32F)
