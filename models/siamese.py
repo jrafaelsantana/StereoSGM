@@ -84,9 +84,19 @@ class Siamese(nn.Module):
 
             out1_small = out1_small.view(out1_small.size()[0], -1)
             out2_small = out2_small.view(out2_small.size()[0], -1)
+
+            # print(out1_small.shape)
+            # print(out1.t().shape)
+            # input()
+            calc1 = torch.mm(out1_small, out1.t())
+            calc2 = torch.mm(out2_small, out2.t())
+
+            #calc1 = torch.mm(out1_small, out1.t())
+            #print(calc1.shape)
+            #input()
             
-            calc1 = out1_small * out1
-            calc2 = out2_small * out2
+            #calc1 = out1_small * out1
+            #calc2 = out2_small * out2
 
             # calc1 = out1_small + out2_small
             # calc2 = out1 + out2
