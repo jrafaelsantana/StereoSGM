@@ -20,7 +20,7 @@ class Siamese(nn.Module):
             nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 1, padding=padding_parameter)
+            nn.Conv2d(128, 3, 1, padding=padding_parameter)
         )
 
         self.conv_15 = nn.Sequential(
@@ -45,7 +45,7 @@ class Siamese(nn.Module):
             nn.Conv2d(128, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 1, padding=padding_parameter)
+            nn.Conv2d(128, 3, 1, padding=padding_parameter)
         )
 
         self.gn = GroupNorm(1,1,0)
@@ -85,11 +85,11 @@ class Siamese(nn.Module):
             out1_small = out1_small.view(out1_small.size()[0], -1)
             out2_small = out2_small.view(out2_small.size()[0], -1)
 
-            # print(out1_small.shape)
-            # print(out1.t().shape)
-            # input()
-            calc1 = torch.mm(out1_small, out1.t())
-            calc2 = torch.mm(out2_small, out2.t())
+            calc1 = torch.cross(out1_small, out1)
+            calc2 = torch.cross(out2_small, out2)
+            
+            #calc1 = torch.mm(out1_small, out1.t())
+            #calc2 = torch.mm(out2_small, out2.t())
 
             #calc1 = torch.mm(out1_small, out1.t())
             #print(calc1.shape)
