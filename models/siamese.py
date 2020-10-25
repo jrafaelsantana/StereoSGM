@@ -11,16 +11,16 @@ class Siamese(nn.Module):
     def __init__(self, chn=1, padding_parameter=0):
         super(Siamese, self).__init__()
         self.conv_7 = nn.Sequential(
-            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
+            nn.Conv2d(chn, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(64, 64, 3, padding=padding_parameter),
+            nn.Conv2d(128, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(64, 128, 3, padding=padding_parameter),
+            nn.Conv2d(128, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 3, 1, padding=padding_parameter)
+            nn.Conv2d(256, 256, 1, padding=padding_parameter)
         )
 
         self.conv_15 = nn.Sequential(
@@ -39,31 +39,30 @@ class Siamese(nn.Module):
             nn.Conv2d(128, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 3, padding=padding_parameter),
+            nn.Conv2d(128, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 3, padding=padding_parameter),
+            nn.Conv2d(256, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 3, 1, padding=padding_parameter)
+            nn.Conv2d(256, 256, 1, padding=padding_parameter)
         )
 
         self.gn = GroupNorm(1,1,0)
 
     def forward_one_7(self, x):
         x = self.conv_7(x)
+        x = self.gn(x)
         return x
 
     def forward_one_15(self, x):
         x = self.conv_15(x)
+        x = self.gn(x)
         return x
 
     def forward(self, x1, x2, training = True):  
         out1 = self.forward_one_15(x1)
-        out1 = self.gn(out1)
-
         out2 = self.forward_one_15(x2)
-        out2 = self.gn(out2)
 
         if training:
             out1 = out1.view(out1.size()[0], -1)
@@ -77,16 +76,18 @@ class Siamese(nn.Module):
             x2_small = cropND(x2, (batch_size, channel_size, width_small, height_small))
 
             out1_small = self.forward_one_7(x1_small)
-            out1_small = self.gn(out1_small)
-
             out2_small = self.forward_one_7(x2_small)
-            out2_small = self.gn(out2_small)
 
             out1_small = out1_small.view(out1_small.size()[0], -1)
             out2_small = out2_small.view(out2_small.size()[0], -1)
 
-            calc1 = torch.cross(out1_small, out1)
-            calc2 = torch.cross(out2_small, out2)
+            calc1 = torch.einsum('ij, ij -> ij', [out1, out2])
+            calc2 = torch.einsum('ij, ij -> ij', [out1_small, out2_small])
+            
+            out = torch.sum(calc1 + calc2, 1)
+
+            #calc1 = torch.cross(out1_small, out1)
+            #calc2 = torch.cross(out2_small, out2)
             
             #calc1 = torch.mm(out1_small, out1.t())
             #calc2 = torch.mm(out2_small, out2.t())
@@ -101,7 +102,7 @@ class Siamese(nn.Module):
             # calc1 = out1_small + out2_small
             # calc2 = out1 + out2
 
-            out = torch.sqrt(torch.sum((calc1 - calc2) * (calc1 - calc2), 1))
+            #out = torch.sqrt(torch.sum((calc1 - calc2) * (calc1 - calc2), 1))
 
             #out = torch.sqrt(torch.sum((out1 - out2) * (out1 - out2), 1))
             #out_small = torch.sqrt(torch.sum((out1_small - out2_small) * (out1_small - out2_small), 1))
@@ -133,10 +134,7 @@ class Siamese(nn.Module):
             return out
         else:
             out1_small = self.forward_one_7(x1)
-            out1_small = self.gn(out1_small)
-
             out2_small = self.forward_one_7(x2)
-            out2_small = self.gn(out2_small)
 
             return out1_small, out2_small, out1, out2
 
