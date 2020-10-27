@@ -88,7 +88,6 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
     with torch.no_grad():
         begin_time = datetime.datetime.now()
-        torch.cuda.empty_cache()
         out1_small, out2_small, out1, out2 = net(left, right, training=False)
         print("Run CNN: {}".format(datetime.datetime.now() - begin_time))
 
@@ -123,13 +122,13 @@ def calc_costs(out1, out2, out1_small, out2_small, max_disparity, width, height)
                 #result = np.abs(np.sum(point_l * point_r))
                 #result = -np.sqrt(np.sum(np.power(point_l * point_r, 2)))
 
-                calc1 = point_l_small + point_l
-                calc2 = point_r_small + point_r
+                calc1 = point_l_small - point_r_small
+                calc2 = point_l - point_r
 
                 result = np.sqrt(np.sum((calc1 - calc2) * (calc1 - calc2)))
 
                 #result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
-                #result_small = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
+                #result = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
 
                 #calc1 = point_l @ point_r
                 #calc2 = point_l_small @ point_r_small

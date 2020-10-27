@@ -1,3 +1,4 @@
+from numpy.lib.arraypad import pad
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,24 +12,42 @@ class Siamese(nn.Module):
     def __init__(self, chn=1, padding_parameter=0):
         super(Siamese, self).__init__()
         self.conv_7 = nn.Sequential(
-            nn.Conv2d(chn, 128, 3, padding=padding_parameter),
+            nn.Conv2d(chn, 32, 2, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 3, padding=padding_parameter),
+            nn.MaxPool2d(2, 1, padding=padding_parameter),
+
+            nn.Conv2d(32, 64, 2, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 256, 3, padding=padding_parameter),
+            nn.Conv2d(64, 64, 2, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(256, 256, 1, padding=padding_parameter)
+            nn.Dropout2d(0.3),
+
+            nn.Conv2d(64, 128, 2, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, 2, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, 1, padding=padding_parameter),
         )
 
         self.conv_15 = nn.Sequential(
-            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
+            nn.Conv2d(chn, 32, 3, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(32, 32, 3, padding=padding_parameter),
+            nn.ReLU(),
+
+            nn.Conv2d(32, 64, 3, padding=padding_parameter),
             nn.ReLU(),
 
             nn.Conv2d(64, 64, 3, padding=padding_parameter),
             nn.ReLU(),
+
+            nn.Dropout2d(0.3),
 
             nn.Conv2d(64, 64, 3, padding=padding_parameter),
             nn.ReLU(),
@@ -39,13 +58,7 @@ class Siamese(nn.Module):
             nn.Conv2d(128, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 256, 3, padding=padding_parameter),
-            nn.ReLU(),
-
-            nn.Conv2d(256, 256, 3, padding=padding_parameter),
-            nn.ReLU(),
-
-            nn.Conv2d(256, 256, 1, padding=padding_parameter)
+            nn.Conv2d(128, 128, 1, padding=padding_parameter),
         )
 
         self.gn = GroupNorm(1,1,0)
@@ -83,8 +96,7 @@ class Siamese(nn.Module):
 
             calc1 = torch.einsum('ij, ij -> ij', [out1, out2])
             calc2 = torch.einsum('ij, ij -> ij', [out1_small, out2_small])
-            
-            out = torch.sum(calc1 + calc2, 1)
+            out = torch.sum(calc1 - calc2, 1)
 
             #calc1 = torch.cross(out1_small, out1)
             #calc2 = torch.cross(out2_small, out2)
