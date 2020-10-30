@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+from torch.nn.modules.batchnorm import BatchNorm2d
+from torch.nn.modules.dropout import Dropout2d
 
 from .groupnorm import GroupNorm
 from utils import cropND
@@ -12,23 +14,13 @@ class Siamese(nn.Module):
     def __init__(self, chn=1, padding_parameter=0):
         super(Siamese, self).__init__()
         self.conv_7 = nn.Sequential(
-            nn.Conv2d(chn, 32, 2, padding=padding_parameter),
+            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.MaxPool2d(2, 1, padding=padding_parameter),
-
-            nn.Conv2d(32, 64, 2, padding=padding_parameter),
+            nn.Conv2d(64, 64, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(64, 64, 2, padding=padding_parameter),
-            nn.ReLU(),
-
-            nn.Dropout2d(0.3),
-
-            nn.Conv2d(64, 128, 2, padding=padding_parameter),
-            nn.ReLU(),
-
-            nn.Conv2d(128, 128, 2, padding=padding_parameter),
+            nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
             nn.Conv2d(128, 128, 1, padding=padding_parameter),
@@ -96,7 +88,13 @@ class Siamese(nn.Module):
 
             calc1 = torch.einsum('ij, ij -> ij', [out1, out2])
             calc2 = torch.einsum('ij, ij -> ij', [out1_small, out2_small])
-            out = torch.sum(calc1 - calc2, 1)
+            
+            out = torch.sum(calc1 + calc2, 1)
+
+            #calc = torch.einsum('ij, ij, ij, ij -> ij', [out1, out2, out1_small, out2_small])
+
+            #out = torch.sum(calc, 1)
+            #out = torch.sqrt(torch.sum((calc1 - calc2) * (calc1 - calc2), 1))
 
             #calc1 = torch.cross(out1_small, out1)
             #calc2 = torch.cross(out2_small, out2)

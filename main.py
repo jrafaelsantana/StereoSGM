@@ -33,6 +33,8 @@ CHANNEL_NUMBER = int(settings.channel_number)
 PENALTY_EQUAL_1 = float(settings.penalty_equal_1)
 PENALTY_BIGGER_THEN_1 = float(settings.penalty_bigger_than_1)
 
+PFM_DIR = '/home/rafael/Desenvolvimento/MiddleburySDK/MiddEval3/trainingQ/'
+
 weight_path = 'weights/trainedweight.pth'
 
 
@@ -121,14 +123,17 @@ def calc_costs(out1, out2, out1_small, out2_small, max_disparity, width, height)
                 #result = np.sum((point_l - point_r) * (point_l - point_r))
                 #result = np.abs(np.sum(point_l * point_r))
                 #result = -np.sqrt(np.sum(np.power(point_l * point_r, 2)))
+                #calc = point_l * point_r * point_l_small * point_r_small
+                #result = np.sum(calc)
 
-                calc1 = point_l_small - point_r_small
-                calc2 = point_l - point_r
+                #calc1 = point_l_small - point_r_small
+                #calc2 = point_l - point_r
 
-                result = np.sqrt(np.sum((calc1 - calc2) * (calc1 - calc2)))
+                #result = np.sqrt(np.sum((calc1 - calc2) * (calc1 - calc2)))
+                #result = np.abs(np.sum(calc1 - calc2))
 
                 #result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
-                #result = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
+                result = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
 
                 #calc1 = point_l @ point_r
                 #calc2 = point_l_small @ point_r_small
@@ -280,10 +285,10 @@ def sgm(directory):
         costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
 
     best_disp = select_best_disparity(aggregation, max_disparity)
-    test = best_disp.astype(np.float32)
-    utils.write_pfm('file.pfm', test)
+    pfm = best_disp.astype(np.float32)
+    utils.write_pfm(PFM_DIR + directory.name + '/disp0DUPLAJANELA7.pfm', pfm)
     
-    utils.saveDisparity(np.uint8(best_disp), 'disp.png')
+    utils.saveDisparity(np.uint8(best_disp), 'resultados/' + directory.name + '_7.png')
 
     print("Evaluate")
     recall = evaluate.recall(best_disp, gt_file, max_disparity)
@@ -294,5 +299,5 @@ if __name__ == "__main__":
     subdirectories = [x for x in p.iterdir() if x.is_dir()]
 
     for directory in subdirectories:
-        if directory.name == 'Adirondack':  # For tests only
-            sgm(directory)
+        #if directory.name == 'Adirondack':  # For tests only
+        sgm(directory)
