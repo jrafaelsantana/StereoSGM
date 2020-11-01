@@ -1,3 +1,6 @@
+import queue
+
+from numpy.core.fromnumeric import squeeze
 from paths import Paths
 import utils
 import config
@@ -6,15 +9,13 @@ import evaluate
 import models
 
 import numpy as np
-import numba
 from numba import jit
 from pathlib import Path
 import torch
 import os
 import cv2
-import math
-import sys
 import datetime
+import torch.multiprocessing as mp
 
 settings = config.Config()
 torch.manual_seed(int(settings.seed))
@@ -48,6 +49,13 @@ weight_path = 'weights/trainedweight.pth'
         4- Evaluate
 """
 
+net = models.Siamese(CHANNEL_NUMBER,1).to(DEVICE)
+
+if os.path.exists(weight_path):
+    net.load_state_dict(torch.load(weight_path))
+else:
+    print('Weights not found')
+
 
 def compute_costs(left, right, max_disparity, patch_height, patch_width, channel_number, device):
     """
@@ -61,13 +69,6 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
     """
 
     print('Computing costs...')
-
-    net = models.Siamese(channel_number,1).to(device)
-
-    if os.path.exists(weight_path):
-        net.load_state_dict(torch.load(weight_path))
-    else:
-        print('Weights not found')
 
     net.eval()
 
@@ -95,63 +96,69 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
         begin_time = datetime.datetime.now()
         
-        out1 = out1.squeeze().cpu().numpy()
-        out2 = out2.squeeze().cpu().numpy()
-        out1_small = out1_small.squeeze().cpu().numpy()
-        out2_small = out2_small.squeeze().cpu().numpy()
+        # out1 = out1.squeeze().cpu()
+        # out2 = out2.squeeze().cpu()
+        # out1_small = out1_small.squeeze().cpu()
+        # out2_small = out2_small.squeeze().cpu()
 
-        costs = calc_costs(out1, out2, out1_small, out2_small, max_disparity, width, height)
+        out1 = out1.squeeze()
+        out2 = out2.squeeze()
+        out1_small = out1_small.squeeze()
+        out2_small = out2_small.squeeze()
+
+        costs = calc_costs(out1, out2, out1_small, out2_small)
+        costs = costs.cpu().numpy()
         
         print("Costs: {}".format(datetime.datetime.now() - begin_time))
 
         return costs
 
-@jit(nopython=True)
-def calc_costs(out1, out2, out1_small, out2_small, max_disparity, width, height):
-    costs = np.zeros((height, width, max_disparity), dtype=np.float32)
 
-    for y in range(0, height - 1):
-        #print('Y ' + str(y))
+def calc_costs(out1, out2, out1_small, out2_small):
 
-        for x in range(0, width - 1):
-            point_l = out1[:, y, x]
-            point_l_small = out1_small[:, y, x]
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    # Problema: Out1, out2, out1_small e out2_small estão com o shape errado.
+    # Deveria ser: [128, 277, 347]
+    # Mas é: [128, 279, 349]
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-            for nd in range(0, max_disparity):
-                point_r = out2[:, y, x-nd]
-                point_r_small = out2_small[:, y, x-nd]
-                #result = np.sum((point_l - point_r) * (point_l - point_r))
-                #result = np.abs(np.sum(point_l * point_r))
-                #result = -np.sqrt(np.sum(np.power(point_l * point_r, 2)))
-                #calc = point_l * point_r * point_l_small * point_r_small
-                #result = np.sum(calc)
+    max_disparity, height, width = out1.shape
+    costs = torch.zeros((height, width, max_disparity), dtype=torch.float32).to(DEVICE)
 
-                #calc1 = point_l_small - point_r_small
-                #calc2 = point_l - point_r
+    for nd in range(0, int(max_disparity)):
+        for x in range(0, int(width) - 1):
+            point_l = out1[:, :, x] # [Features, Y]
+            point_l_small = out1_small[:, :, x] # [Features, Y]
 
-                #result = np.sqrt(np.sum((calc1 - calc2) * (calc1 - calc2)))
-                #result = np.abs(np.sum(calc1 - calc2))
+            point_r = out2[:, :, x-nd] # [Features, Y]
+            point_r_small = out2_small[:, :, x-nd] # [Features, Y]
 
-                #result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
-                result = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
+            conc_mat = torch.cat((point_l, point_l_small, point_r, point_r_small), 0) # [Features * 4, Y]
+            conc_mat = conc_mat.transpose(1,0) # [Y, Features * 4]
 
-                #calc1 = point_l @ point_r
-                #calc2 = point_l_small @ point_r_small
-                #calc = calc1 + calc2
+            result = net.linear(conc_mat) # [Y, 1]
+            result = result.squeeze() # [Y]
 
-                # print(calc)
-                # print(calc1)
-                # print(calc2)
-                # print()
-                # input()
-
-                #result = np.sum((point_l * point_r) + (point_l_small * point_r_small))
-                #print(result)
-                #input()
-                    
-                costs[y, x, nd] = result
+            costs[:, x, nd] = result
 
     return costs
+
+    # for y in range(0, int(height) - 1):
+    #     print(y)
+    #     for x in range(0, int(width) - 1):
+    #         point_l = out1[:, y, x]
+    #         point_l_small = out1_small[:, y, x]
+
+    #         for nd in range(0, int(max_disparity)):
+    #             point_r = out2[:, y, x-nd]
+    #             point_r_small = out2_small[:, y, x-nd]
+
+    #             conc_mat = torch.cat((point_l, point_r, point_l_small, point_r_small))
+    #             result = model.linear(conc_mat)
+                        
+    #             costs[y, x, nd] = result
+
+    # return costs
 
 
 def compute_aggregation(cost, paths, p1, p2):
@@ -290,14 +297,15 @@ def sgm(directory):
     
     utils.saveDisparity(np.uint8(best_disp), 'resultados/' + directory.name + '_7.png')
 
-    print("Evaluate")
-    recall = evaluate.recall(best_disp, gt_file, max_disparity)
-    print('\tRecall = {:.2f}%'.format(recall * 100.0))
+    # print("Evaluate")
+    # recall = evaluate.recall(best_disp, gt_file, max_disparity)
+    # print('\tRecall = {:.2f}%'.format(recall * 100.0))
+
 
 if __name__ == "__main__":
     p = Path('.' + settings.dataset_train)
     subdirectories = [x for x in p.iterdir() if x.is_dir()]
 
     for directory in subdirectories:
-        #if directory.name == 'Adirondack':  # For tests only
-        sgm(directory)
+        if directory.name == 'ArtL':  # For tests only
+            sgm(directory)
