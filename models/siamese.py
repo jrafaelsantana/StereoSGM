@@ -81,13 +81,8 @@ class Siamese(nn.Module):
             out1 = out1.view(out1.size()[0], -1)
             out2 = out2.view(out2.size()[0], -1)
 
-            #x1_small = nn.functional.interpolate(x1, scale_factor=0.5, mode='bilinear')
-            #x2_small = nn.functional.interpolate(x2, scale_factor=0.5, mode='bilinear')
-
-            resize = torchvision.transforms.Resize((7,7))
-
-            x1_small = resize(x1)
-            x2_small = resize(x2)
+            x1_small = nn.functional.interpolate(x1, scale_factor=0.5, mode='bilinear')
+            x2_small = nn.functional.interpolate(x2, scale_factor=0.5, mode='bilinear')
 
             out1_small = self.forward_one_7(x1_small)
             out2_small = self.forward_one_7(x2_small)
