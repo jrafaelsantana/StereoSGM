@@ -61,7 +61,13 @@ class Siamese(nn.Module):
         )
 
         self.full = nn.Sequential(
-            nn.Linear(256, 1),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            
+            nn.Linear(64, 1),
             nn.Sigmoid()
         )
 
