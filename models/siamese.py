@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import torchvision
+from utils import cropND
 
 from utils import cropND
 
@@ -22,23 +22,34 @@ class Siamese(nn.Module):
             nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 1, padding=padding_parameter),
+            nn.Conv2d(128, 128, 1, padding=0),
         )
 
         self.conv_15 = nn.Sequential(
-            nn.Conv2d(chn, 32, 3, padding=padding_parameter),
-            nn.ReLU(),
+            # nn.Conv2d(chn, 32, 3, padding=padding_parameter),
+            # nn.ReLU(),
 
-            nn.Conv2d(32, 32, 3, padding=padding_parameter),
-            nn.ReLU(),
+            # nn.Conv2d(32, 32, 3, padding=padding_parameter),
+            # nn.ReLU(),
 
-            nn.Conv2d(32, 64, 3, padding=padding_parameter),
-            nn.ReLU(),
+            # nn.Conv2d(32, 64, 3, padding=padding_parameter),
+            # nn.ReLU(),
 
-            nn.Conv2d(64, 64, 3, padding=padding_parameter),
-            nn.ReLU(),
+            # nn.Conv2d(64, 64, 3, padding=padding_parameter),
+            # nn.ReLU(),
 
-            nn.Dropout2d(0.3),
+            # nn.Conv2d(64, 64, 3, padding=padding_parameter),
+            # nn.ReLU(),
+
+            # nn.Conv2d(64, 128, 3, padding=padding_parameter),
+            # nn.ReLU(),
+
+            # nn.Conv2d(128, 128, 3, padding=padding_parameter),
+            # nn.ReLU(),
+
+            # nn.Conv2d(128, 128, 1, padding=padding_parameter),
+            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
+            nn.ReLU(),
 
             nn.Conv2d(64, 64, 3, padding=padding_parameter),
             nn.ReLU(),
@@ -46,14 +57,11 @@ class Siamese(nn.Module):
             nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 3, padding=padding_parameter),
-            nn.ReLU(),
-
-            nn.Conv2d(128, 128, 1, padding=padding_parameter),
+            nn.Conv2d(128, 128, 1, padding=0),
         )
 
         self.full = nn.Sequential(
-            nn.Linear(512, 1),
+            nn.Linear(256, 1),
             nn.Sigmoid()
         )
 
@@ -74,30 +82,60 @@ class Siamese(nn.Module):
         return x
 
     def forward(self, x1, x2, training = True):  
-        out1 = self.forward_one_15(x1)
-        out2 = self.forward_one_15(x2)
-
         if training:
+            batch_size, channel_size, width, height = x1.shape
+            width_small = int(width/2)
+            height_small = int(height/2)
+
+            x1_small = cropND(x1, (batch_size, channel_size, width_small, height_small))
+            x2_small = cropND(x2, (batch_size, channel_size, width_small, height_small))
+
+            x1_down = nn.functional.interpolate(x1, scale_factor=0.5, mode='bilinear')
+            x2_down = nn.functional.interpolate(x2, scale_factor=0.5, mode='bilinear')
+
+            out1 = self.forward_one_15(x1_down)
+            out2 = self.forward_one_15(x2_down)
             out1 = out1.view(out1.size()[0], -1)
             out2 = out2.view(out2.size()[0], -1)
 
-            x1_small = nn.functional.interpolate(x1, scale_factor=0.5, mode='bilinear')
-            x2_small = nn.functional.interpolate(x2, scale_factor=0.5, mode='bilinear')
-
             out1_small = self.forward_one_7(x1_small)
             out2_small = self.forward_one_7(x2_small)
-
             out1_small = out1_small.view(out1_small.size()[0], -1)
             out2_small = out2_small.view(out2_small.size()[0], -1)
 
-            conc_tensor = torch.cat((out1, out1_small, out2, out2_small), 1)
+            #calc1 = out1_small + out2_small
+            #calc2 = out1 + out2
+
+            #calc1 = torch.einsum('ij, ij -> ij', [out1, out2])
+            #calc2 = torch.einsum('ij, ij -> ij', [out1_small, out2_small])
+            #out = torch.sqrt(torch.sum((calc1 - calc2) * (calc1 - calc2), 1))
+            #out = torch.sqrt(torch.sum((out1_small - out2_small) * (out1_small - out2_small), 1))
+            #out = torch.abs(torch.sum(calc1 + calc2, 1))
+
+            #conc_tensor = torch.cat((out1, out1_small, out2, out2_small), 1)
+            conc_tensor = torch.cat((out1_small, out2_small), 1)
+            #conc_tensor = torch.abs(out1_small-out2_small)
             out = self.linear(conc_tensor)
+            #out = torch.pow(out, 2)
 
             return out
         
         else:
-            out1_small = self.forward_one_7(x1)
-            out2_small = self.forward_one_7(x2)
+            x1_down = nn.functional.interpolate(x1, scale_factor=0.5, mode='bilinear')
+            x2_down = nn.functional.interpolate(x2, scale_factor=0.5, mode='bilinear')
+
+            out1 = self.forward_one_15(x1_down)
+            out2 = self.forward_one_15(x2_down)
+
+            batch_size, channel_size, width, height = x1.shape
+            width_small = int(width/2)
+            height_small = int(height/2)
+
+            x1_small = cropND(x1, (batch_size, channel_size, width_small, height_small))
+            x2_small = cropND(x2, (batch_size, channel_size, width_small, height_small))
+
+            out1_small = self.forward_one_7(x1_small)
+            out2_small = self.forward_one_7(x2_small)
 
             return out1_small, out2_small, out1, out2
 

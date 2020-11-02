@@ -1,6 +1,3 @@
-import queue
-
-from numpy.core.fromnumeric import squeeze
 from paths import Paths
 import utils
 import config
@@ -15,7 +12,6 @@ import torch
 import os
 import cv2
 import datetime
-import torch.multiprocessing as mp
 
 settings = config.Config()
 torch.manual_seed(int(settings.seed))
@@ -96,10 +92,10 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
         begin_time = datetime.datetime.now()
         
-        # out1 = out1.squeeze().cpu()
-        # out2 = out2.squeeze().cpu()
-        # out1_small = out1_small.squeeze().cpu()
-        # out2_small = out2_small.squeeze().cpu()
+        # out1 = out1.squeeze().cpu().numpy()
+        # out2 = out2.squeeze().cpu().numpy()
+        # out1_small = out1_small.squeeze().cpu().numpy()
+        # out2_small = out2_small.squeeze().cpu().numpy()
 
         out1 = out1.squeeze()
         out2 = out2.squeeze()
@@ -113,34 +109,92 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
         return costs
 
-
+'''@jit(nopython=True)
 def calc_costs(out1, out2, out1_small, out2_small):
+    max_disparity, height, width = out1.shape
+    costs = np.zeros((height, width, max_disparity), dtype=np.float32)
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-    # Problema: Out1, out2, out1_small e out2_small estão com o shape errado.
-    # Deveria ser: [128, 277, 347]
-    # Mas é: [128, 279, 349]
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    for y in range(0, height - 1):
+        #print('Y ' + str(y))
 
+        for x in range(0, width - 1):
+            point_l = out1[:, y, x]
+            point_l_small = out1_small[:, y, x]
+
+            for nd in range(0, max_disparity):
+                point_r = out2[:, y, x-nd]
+                point_r_small = out2_small[:, y, x-nd]
+                #result = np.sum((point_l - point_r) * (point_l - point_r))
+                #result = np.abs(np.sum(point_l * point_r))
+                #result = -np.sqrt(np.sum(np.power(point_l * point_r, 2)))
+                #calc = point_l * point_r * point_l_small * point_r_small
+                #result = np.sum(calc)
+
+                #calc1 = point_l_small + point_r_small
+                #calc2 = point_l + point_r
+
+                #result = np.sqrt(np.sum((calc1 - calc2) * (calc1 - calc2)))
+                result = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
+                #result = np.abs(np.sum(calc1 + calc2))
+                #result = np.abs(np.sum(calc1 - calc2))
+
+                #result = np.sqrt(np.sum((point_l - point_r) * (point_l - point_r)))
+                #result = np.sqrt(np.sum((point_l_small - point_r_small) * (point_l_small - point_r_small)))
+
+                #calc1 = point_l @ point_r
+                #calc2 = point_l_small @ point_r_small
+                #calc = calc1 + calc2
+
+                # print(calc)
+                # print(calc1)
+                # print(calc2)
+                # print()
+                # input()
+
+                #result = np.sum((point_l * point_r) + (point_l_small * point_r_small))
+                #print(result)
+                #input()
+                    
+                costs[y, x, nd] = result
+
+    return costs
+'''
+def calc_costs(out1, out2, out1_small, out2_small):
     max_disparity, height, width = out1.shape
     costs = torch.zeros((height, width, max_disparity), dtype=torch.float32).to(DEVICE)
 
     for nd in range(0, int(max_disparity)):
-        for x in range(0, int(width) - 1):
+        for x in range(0, int(width) - 1)[::-1]:
             point_l = out1[:, :, x] # [Features, Y]
             point_l_small = out1_small[:, :, x] # [Features, Y]
 
             point_r = out2[:, :, x-nd] # [Features, Y]
             point_r_small = out2_small[:, :, x-nd] # [Features, Y]
+            
+            #result = torch.sqrt(torch.sum((point_l_small - point_r_small) * (point_l_small - point_r_small), 0))
+            
+            #calc1 = point_l_small - point_r_small
+            #calc2 = point_l - point_r
 
-            conc_mat = torch.cat((point_l, point_l_small, point_r, point_r_small), 0) # [Features * 4, Y]
-            conc_mat = conc_mat.transpose(1,0) # [Y, Features * 4]
+            #result = np.sum((calc1 - calc2) * (calc1 - calc2), 0)
+            
+            # print(point_l.shape)
+            # print(point_r.shape)
+            # print(point_l_small.shape)
+            # print(point_r_small.shape)
 
+            #conc_mat = torch.cat((point_l, point_l_small, point_r, point_r_small), 0) # [Features * 4, Y]
+            conc_mat = torch.cat((point_l_small, point_r_small), 0) 
+            #conc_mat = torch.abs(point_l_small - point_r_small)
+
+            # print(conc_mat.shape)
+            conc_mat = conc_mat.transpose(1,0) # [Y, Features * 4] torch.Size([279, 512])
+            # print(conc_mat.shape)
             result = net.linear(conc_mat) # [Y, 1]
             result = result.squeeze() # [Y]
+            #result = torch.pow(result, 2)
 
             costs[:, x, nd] = result
-
     return costs
 
     # for y in range(0, int(height) - 1):
@@ -306,6 +360,14 @@ if __name__ == "__main__":
     p = Path('.' + settings.dataset_train)
     subdirectories = [x for x in p.iterdir() if x.is_dir()]
 
+    # for name, param in net.named_parameters():
+    #     if 'full' in name:
+    #         print(name)
+    #         print(param)
+    #         print()
+    
+    # input()
+
     for directory in subdirectories:
-        if directory.name == 'ArtL':  # For tests only
+        if directory.name == 'Adirondack':  # For tests only
             sgm(directory)

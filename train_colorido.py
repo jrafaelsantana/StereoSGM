@@ -61,8 +61,9 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     
     net = models.Siamese(channel_number).to(device)
     loss_fn = torch.nn.MarginRankingLoss(0.2).to(device)
+    #loss_fn = torch.nn.BCELoss().to(device)
 
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.000001, eps=1e-08, weight_decay=0.0000005)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
@@ -122,6 +123,11 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                 images1_batch = torch.zeros((2*batch_temp, channel_number, patch_height, patch_width), device=device)
                 images2_batch = torch.zeros((2*batch_temp, channel_number, patch_height, patch_width), device=device)
                 target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_temp, device=device)
+
+                target_s = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_temp, device=device)
+                target_n = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_temp, device=device)
+
+                target_2x = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_temp*2, device=device)
 
                 patch_sample = random.sample(range(0, batch_temp, 1), int(batch_temp))
                 patch_order = 0
@@ -193,13 +199,36 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                     target[patch_id] = -1.0 + 2*patch_order
 
+                    target_s[patch_id] = 1
+                    target_n[patch_id] = 0
+
+                    target_2x[2*patch_id] = 1
+                    target_2x[2*patch_id+1-patch_order] = 0
+
+                optimizer.zero_grad()
+
                 output = net(images1_batch, images2_batch)
+                #output = output.squeeze()
 
                 output_s = output[::2]
                 output_n = output[1::2]
 
-                loss = loss_fn(output_s, output_n, target)
+                #loss_positive = torch.nn.functional.cross_entropy(output_s, target_s)
+                #loss_negative = torch.nn.functional.cross_entropy(output_n, target_n)
 
+                # loss_p = loss_fn(output_s, target_s)
+                # loss_n = loss_fn(output_n, target_n)
+
+                # loss = loss_p + loss_n
+                # print(loss_p)
+                # print(loss_n.shape)
+                # loss = torch.cat((loss_p, loss_n))
+                # print(loss.shape)
+                # input()
+
+                #loss = loss_positive + loss_negative
+
+                loss = loss_fn(output_s, output_n, target)
                 loss.backward()
                 optimizer.step()
 
@@ -213,7 +242,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
         # TEST
         if((epoch+1) % 1 == 0):
-            net.eval()
+            #net.eval()
 
             err_tr_cnt = 0
             err_tr = 0
@@ -221,7 +250,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
             loss_val = 0
 
             with torch.no_grad():
-                total_batches_valid = len(points_valid_split)
+                '''total_batches_valid = len(points_valid_split)
                 sample_valid = random.sample(range(0, total_batches_valid), total_batches_valid)
 
                 for batch_id in sample_valid:
@@ -230,6 +259,9 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     images1_batch = torch.zeros((2*batch_temp, channel_number, patch_width, patch_height), device=device)
                     images2_batch = torch.zeros((2*batch_temp, channel_number, patch_width, patch_height), device=device)
                     target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_temp, device=device)
+
+                    target_s = torch.linspace(1.0, 1.0, dtype=torch.long, steps=batch_temp, device=device)
+                    target_n = torch.linspace(1.0, 1.0, dtype=torch.long, steps=batch_temp, device=device)
 
                     patch_sample = random.sample(range(0, batch_temp, 1), int(batch_temp))
                     patch_order = 1
@@ -265,12 +297,19 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                         target[patch_id] = -1.0 + 2*patch_order
 
+                        target_s[patch_id] = 1
+                        target_n[patch_id] = 0
+
                     output_v = net(images1_batch, images2_batch)
 
                     output_s_v = output_v[::2]
                     output_n_v = output_v[1::2]
 
-                    loss = loss_fn(output_s_v, output_n_v, target)
+                    loss_positive = torch.nn.functional.cross_entropy(output_s_v, target_s)
+                    loss_negative = torch.nn.functional.cross_entropy(output_n_v, target_n)
+
+                    loss = loss_positive + loss_negative
+                    #loss = loss_fn(output_s_v, output_n_v, target)
 
                     loss_val += loss.item()
                     loss_val_cnt += 1
@@ -284,23 +323,24 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
 
                 avg_err = err_tr/err_tr_cnt
 
-                avg_val_loss = loss_val/loss_val_cnt
+                avg_val_loss = loss_val/loss_val_cnt'''
 
-                '''if(smaller_error > avg_val_loss):
-                    smaller_error = avg_val_loss
-                    iter_no_impro_counter = 0
-                    torch.save(net.state_dict(), weight_path)
-                else:
-                    iter_no_impro_counter = iter_no_impro_counter + 1'''
+                # if(smaller_error > avg_val_loss):
+                #     smaller_error = avg_val_loss
+                #     iter_no_impro_counter = 0
+                #     torch.save(net.state_dict(), weight_path)
+                # else:
+                #     iter_no_impro_counter = iter_no_impro_counter + 1
 
                 torch.save(net.state_dict(), weight_path)
 
-            print('epoch\t%d loss:\t%.23f val_loss:\t%.5f error:\t%.5f time lapsed:\t%.2f s' % (
-                epoch, avg_loss, avg_val_loss, avg_err, time.time() - time_start))
+            '''print('epoch\t%d loss:\t%.23f val_loss:\t%.5f error:\t%.5f time lapsed:\t%.2f s' % (
+                epoch, avg_loss, avg_val_loss, avg_err, time.time() - time_start))'''
+            print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' %
+                  (epoch, avg_loss, time.time() - time_start))
         else:
             print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' %
                   (epoch, avg_loss, time.time() - time_start))
-
 
 if __name__ == "__main__":
     dataset_dict = utils.load_obj('database')
