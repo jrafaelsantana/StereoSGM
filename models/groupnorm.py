@@ -11,18 +11,29 @@ class GroupNorm(nn.Module):
         self.eps = eps
 
     def forward(self, x):
-        N,C,H,W = x.size()
+        # N,C,H,W = x.size()
+        # G = self.num_groups
+        # assert C % G == 0
+        # #print("N", N)
+        # #print("G", G)
+        # #print(x.shape)
+        # x = x.reshape(N,G,-1)
+        # #print("OPA" ,x.shape)
+        # mean = x.mean(-1, keepdim=True)
+        # var = x.var(-1, keepdim=True)
+
+        # x = (x-mean) / (var+self.eps).sqrt()
+        # x = x.view(N,C,H,W)
+        # #return x * self.weight + self.bias
+        # return x
+
+        N,F = x.size()
         G = self.num_groups
-        assert C % G == 0
-        #print("N", N)
-        #print("G", G)
-        #print(x.shape)
+        assert F % G == 0
         x = x.reshape(N,G,-1)
-        #print("OPA" ,x.shape)
         mean = x.mean(-1, keepdim=True)
         var = x.var(-1, keepdim=True)
 
         x = (x-mean) / (var+self.eps).sqrt()
-        x = x.view(N,C,H,W)
-        #return x * self.weight + self.bias
+        x = x.view(N,F)
         return x

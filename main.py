@@ -102,7 +102,7 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
         out1_small = out1_small.squeeze()
         out2_small = out2_small.squeeze()
 
-        costs = calc_costs(out1, out2, out1_small, out2_small)
+        costs = calc_costs(out1, out2, out1_small, out2_small, max_disparity)
         costs = costs.cpu().numpy()
         
         print("Costs: {}".format(datetime.datetime.now() - begin_time))
@@ -159,15 +159,15 @@ def calc_costs(out1, out2, out1_small, out2_small):
 
     return costs
 '''
-def calc_costs(out1, out2, out1_small, out2_small):
-    max_disparity, height, width = out1.shape
+def calc_costs(out1, out2, out1_small, out2_small, max_disparity):
+    features, height, width = out1.shape
     costs = torch.zeros((height, width, max_disparity), dtype=torch.float32).to(DEVICE)
 
     for nd in range(0, int(max_disparity)):
-        for x in range(0, int(width) - 1)[::-1]:
+        for x in range(0, int(width) - 1):
             point_l = out1[:, :, x] # [Features, Y]
             point_l_small = out1_small[:, :, x] # [Features, Y]
-
+            
             point_r = out2[:, :, x-nd] # [Features, Y]
             point_r_small = out2_small[:, :, x-nd] # [Features, Y]
             
@@ -185,6 +185,7 @@ def calc_costs(out1, out2, out1_small, out2_small):
 
             #conc_mat = torch.cat((point_l, point_l_small, point_r, point_r_small), 0) # [Features * 4, Y]
             conc_mat = torch.cat((point_l_small, point_r_small), 0) 
+            conc_mat = net.norm(conc_mat)
             #conc_mat = torch.abs(point_l_small - point_r_small)
 
             # print(conc_mat.shape)

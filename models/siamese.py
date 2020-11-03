@@ -13,16 +13,16 @@ class Siamese(nn.Module):
     def __init__(self, chn=1, padding_parameter=0):
         super(Siamese, self).__init__()
         self.conv_7 = nn.Sequential(
-            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
+            nn.Conv2d(chn, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(64, 64, 3, padding=padding_parameter),
+            nn.Conv2d(256, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(64, 128, 3, padding=padding_parameter),
+            nn.Conv2d(256, 512, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 1, padding=0),
+            nn.Conv2d(512, 512, 1, padding=0),
         )
 
         self.conv_15 = nn.Sequential(
@@ -48,19 +48,25 @@ class Siamese(nn.Module):
             # nn.ReLU(),
 
             # nn.Conv2d(128, 128, 1, padding=padding_parameter),
-            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
+            nn.Conv2d(chn, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(64, 64, 3, padding=padding_parameter),
+            nn.Conv2d(256, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(64, 128, 3, padding=padding_parameter),
+            nn.Conv2d(256, 512, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 1, padding=0),
+            nn.Conv2d(512, 512, 1, padding=0),
         )
 
         self.full = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+
+            nn.Linear(512, 256),
+            nn.ReLU(),
+
             nn.Linear(256, 128),
             nn.ReLU(),
 
@@ -75,16 +81,20 @@ class Siamese(nn.Module):
 
     def forward_one_7(self, x):
         x = self.conv_7(x)
-        x = self.gn(x)
+        #x = self.gn(x)
         return x
 
     def forward_one_15(self, x):
         x = self.conv_15(x)
-        x = self.gn(x)
+        #x = self.gn(x)
         return x
     
     def linear (self, x):
         x = self.full(x)
+        return x
+
+    def norm (self, x):
+        x = self.gn(x)
         return x
 
     def forward(self, x1, x2, training = True):  
@@ -120,6 +130,8 @@ class Siamese(nn.Module):
 
             #conc_tensor = torch.cat((out1, out1_small, out2, out2_small), 1)
             conc_tensor = torch.cat((out1_small, out2_small), 1)
+            #print(conc_tensor.shape)
+            conc_tensor = self.norm(conc_tensor)
             #conc_tensor = torch.abs(out1_small-out2_small)
             out = self.linear(conc_tensor)
             #out = torch.pow(out, 2)
