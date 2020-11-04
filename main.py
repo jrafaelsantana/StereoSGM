@@ -348,7 +348,7 @@ def sgm(directory):
 
     best_disp = select_best_disparity(aggregation, max_disparity)
     pfm = best_disp.astype(np.float32)
-    utils.write_pfm(PFM_DIR + directory.name + '/disp0DUPLAJANELA7.pfm', pfm)
+    #utils.write_pfm(PFM_DIR + directory.name + '/disp0DUPLAJANELA7.pfm', pfm)
     
     utils.saveDisparity(np.uint8(best_disp), 'resultados/' + directory.name + '_7.png')
 
