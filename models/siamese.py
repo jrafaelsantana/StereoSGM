@@ -13,16 +13,16 @@ class Siamese(nn.Module):
     def __init__(self, chn=1, padding_parameter=0):
         super(Siamese, self).__init__()
         self.conv_7 = nn.Sequential(
-            nn.Conv2d(chn, 256, 3, padding=padding_parameter),
+            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(256, 256, 3, padding=padding_parameter),
+            nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(256, 512, 3, padding=padding_parameter),
+            nn.Conv2d(128, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(512, 512, 1, padding=0),
+            nn.Conv2d(256, 128, 1, padding=0),
         )
 
         self.conv_15 = nn.Sequential(
@@ -48,32 +48,32 @@ class Siamese(nn.Module):
             # nn.ReLU(),
 
             # nn.Conv2d(128, 128, 1, padding=padding_parameter),
-            nn.Conv2d(chn, 256, 3, padding=padding_parameter),
+            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(256, 256, 3, padding=padding_parameter),
+            nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(256, 512, 3, padding=padding_parameter),
+            nn.Conv2d(128, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(512, 512, 1, padding=0),
+            nn.Conv2d(256, 128, 1, padding=0),
         )
 
         self.full = nn.Sequential(
-            nn.Linear(1024, 512),
-            nn.ReLU(),
-
-            nn.Linear(512, 256),
-            nn.ReLU(),
-
             nn.Linear(256, 128),
             nn.ReLU(),
 
             nn.Linear(128, 64),
             nn.ReLU(),
+
+            nn.Linear(64, 32),
+            nn.ReLU(),
+
+            nn.Linear(32, 16),
+            nn.ReLU(),
             
-            nn.Linear(64, 1),
+            nn.Linear(16, 1),
             nn.Sigmoid()
         )
 
@@ -161,6 +161,7 @@ def weights_init_uniform_rule(m):
     classname = m.__class__.__name__
     # for every Linear layer in a model..
     if classname.find('Linear') != -1:
+        print('Entrou')
         # get the number of the inputs
         n = m.in_features
         y = 1.0/np.sqrt(n)

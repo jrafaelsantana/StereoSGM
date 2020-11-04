@@ -64,6 +64,7 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
     #loss_fn = torch.nn.BCELoss().to(device)
 
     optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
+    #optimizer = torch.optim.SGD(net.parameters(), lr=0.1, momentum=0.9)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
@@ -179,9 +180,9 @@ def train(batch_size, epochs_number, pair_list, points_train, points_valid, devi
                     brightness_ = 0
                     contrast_ = contrast * random.uniform(1 / D_CONTRAST, D_CONTRAST)
 
-                    pair1Temp_d = utils.make_patch(images1, (patch_height, patch_width), j, i, device, scale, phi, trans, hshear, brightness, contrast)
-                    pair2Temp_d = utils.make_patch(images2, (patch_height, patch_width), j + pos_d, i, device, scale_, phi_, trans_, hshear_, brightness_, contrast_)
-                    pair2TempN_d = utils.make_patch(images2, (patch_height, patch_width), j + neg_d, i, device, scale_, phi_, trans_, hshear_, brightness_, contrast_)
+                    pair1Temp_d = utils.make_patch(images1, (patch_height, patch_width), j, i, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
+                    pair2Temp_d = utils.make_patch(images2, (patch_height, patch_width), j + pos_d, i, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
+                    pair2TempN_d = utils.make_patch(images2, (patch_height, patch_width), j + neg_d, i, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
                     
                     #print(pair1Temp_d.shape)
                     # dst = K.tensor_to_image(pair1Temp_d.byte())
@@ -360,7 +361,7 @@ if __name__ == "__main__":
         device = DEVICE,
         weight_path = weight_path,
         dataset_neg_low = 1.5,
-        dataset_neg_high = 6,
+        dataset_neg_high = 18,
         dataset_pos = 0.5,
         center_height = CENTER_PATCH_HEIGHT,
         center_width = CENTER_PATCH_WIDTH,

@@ -100,26 +100,26 @@ def generate_patches_training(
                         if((j - d_r - dataset_pos - center_width) >= 0 and (j - d_r - dataset_neg_high - center_width) >= 0 and (j - d_r + dataset_pos + center_width) < img_left.shape[1] and (j - d_r + dataset_neg_high + center_width) < img_left.shape[1]):
                             dataset_neg_high = int(dataset_neg_high)
 
-                            #desvio_alto = True
+                            desvio_alto = True
                             d_I = -dataset_neg_high
 
-                            while(d_I < dataset_neg_high):
+                            #while(d_I < dataset_neg_high):
+                            #    d_I = d_I + 1
+
+                            while(desvio_alto and d_I < dataset_neg_high):
+                                pair2Temp = img_right[i-center_height:i+center_height+1,j-center_height-d_r+d_I:j+center_height+1-d_r+d_I]
                                 d_I = d_I + 1
 
-                            #while(desvio_alto and d_I < dataset_neg_high):
-                                #pair2Temp = img_right[i-center_height:i+center_height+1,j-center_height-d_r+d_I:j+center_height+1-d_r+d_I]
-                                #d_I = d_I + 1
-
-                                # pair2TempVar = np.std(pair2Temp) 
+                                pair2TempVar = np.std(pair2Temp) 
                                 
-                                # if(pair2TempVar <= 0.40): 
-                                #     desvio_alto = False
+                                if(pair2TempVar <= 0.40): 
+                                    desvio_alto = False
 
-                            # if(desvio_alto == True):
-                            #     points.append((i,j,d,index_pair))
-                            #     total = total + 1
-                            points.append((i,j,d,index_pair))
-                            total = total + 1
+                            if(desvio_alto == True):
+                                points.append((i,j,d,index_pair))
+                                total = total + 1
+                            #points.append((i,j,d,index_pair))
+                            #total = total + 1
 
                 sample_index = sample_index + 1
             else:

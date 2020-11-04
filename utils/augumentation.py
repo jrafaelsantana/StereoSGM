@@ -85,7 +85,7 @@ def rotation(img, angle):
     img = cv2.warpAffine(img, M, (w, h))
     return img
 
-def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0, flipH = 1):
+def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0, flipH = 1, channel_size = 3):
     data = src.unsqueeze(0)
 
     _, ch, rows, cols = data.shape 
@@ -112,7 +112,11 @@ def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(
     dst = dst * contrast
     dst = dst + brightness
     dst = dst.squeeze()
-    dst = dst[:, 0:win_size[1], 0:win_size[0]]
+
+    if channel_shift == 3:
+        dst = dst[:, 0:win_size[1], 0:win_size[0]]
+    else:
+        dst = dst[0:win_size[1], 0:win_size[0]]
     
     if(flipH == -1):            
         fmat = torch.FloatTensor([[flipH, 0, win_size[0]-1], [0, 1, 0], [0, 0, 1]]).to(device)                
