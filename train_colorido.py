@@ -361,7 +361,7 @@ if __name__ == "__main__":
         device = DEVICE,
         weight_path = weight_path,
         dataset_neg_low = 1.5,
-        dataset_neg_high = 18,
+        dataset_neg_high = 6,
         dataset_pos = 0.5,
         center_height = CENTER_PATCH_HEIGHT,
         center_width = CENTER_PATCH_WIDTH,
