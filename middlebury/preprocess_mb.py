@@ -30,22 +30,23 @@ def load_pfm(fname, downsample):
   scale = None
   endian = None
   
-  file = open(fname)
-  header = file.readline().rstrip()
+  file = open(fname, 'rb')
+  header = file.readline().decode('latin-1').rstrip()
+
   if header == 'PF':
-    color = True    
+    color = True
   elif header == 'Pf':
     color = False
   else:
     raise Exception('Not a PFM file.')
  
-  dim_match = re.match(r'^(\d+)\s(\d+)\s$', file.readline())
+  dim_match = re.match(r'^(\d+)\s(\d+)\s$', file.readline().decode('latin-1'))
   if dim_match:
     width, height = map(int, dim_match.groups())
   else:
     raise Exception('Malformed PFM header.')
  
-  scale = float(file.readline().rstrip())
+  scale = float(file.readline().decode('latin-1').rstrip())
   if scale < 0: # little-endian
     endian = '<'
     scale = -scale

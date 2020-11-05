@@ -8,3 +8,6 @@ weights*/
 *.pfm
 resultados_antigo/
 middlebury/data.mb
+*.bin
+*.dim
+*.type
