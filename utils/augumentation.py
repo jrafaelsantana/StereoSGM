@@ -131,3 +131,32 @@ def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(
         dst = dst.unsqueeze(0)
 
     return dst
+
+def mul32 (a,b):
+    return [a[0]*b[0]+a[1]*b[3], a[0]*b[1]+a[1]*b[4], a[0]*b[2]+a[1]*b[5]+a[2], a[3]*b[0]+a[4]*b[3], a[3]*b[1]+a[4]*b[4], a[3]*b[2]+a[4]*b[5]+a[5]]
+
+def make_patch_cv2 (src, ws, dim3, dim4, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0):
+    ch, rows, cols = src.shape
+    src = src.squeeze().numpy()
+
+    m = [1, 0, -dim4, 0, 1, -dim3]
+    m = mul32([1, 0, trans[0], 0, 1, trans[1]], m) #translate
+    m = mul32([scale[0], 0, 0, 0, scale[1], 0], m) #scale
+
+    c = math.cos(phi)
+    s = math.sin(phi)
+
+    m = mul32([c, s, 0, -s, c, 0], m)   #rotate
+    m = mul32([1, hshear, 0, 0, 1, 0], m)   #shear
+    m = mul32([1, 0, (ws - 1) / 2, 0, 1, (ws - 1) / 2], m)
+    m = np.array(m, dtype=np.float64)
+    m = np.reshape(m, (-1,3))
+
+    warp = cv2.warpAffine(src, m, (cols, rows))
+    warp = warp * contrast
+    warp = warp + brightness
+
+    warp = torch.FloatTensor(warp).unsqueeze(0)
+
+    return warp
+
