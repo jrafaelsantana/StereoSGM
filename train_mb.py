@@ -66,7 +66,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
         
     optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
 
-    X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray')
+    X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray', device)
     nnz = nnz_tr
     print('Carregou')
     
@@ -135,8 +135,8 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                         if random.random() < 0.2:
                             light_ = max(1, (random.randint(1,10000) % lenImg))
 
-                        x0 = X[img][light][exp,0].to(device)
-                        x1 = X[img][light_][exp_,1].to(device)
+                        x0 = X[img][light][exp,0]
+                        x1 = X[img][light_][exp_,1]
 
                         pair1Temp_d = utils.make_patch(x0, (patch_height, patch_width), dim4, dim3, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
                         pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
@@ -174,7 +174,8 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
             err_tr += loss.item()
             err_tr_cnt += 1
 
-        torch.save(net.state_dict(), weight_path)
+            torch.save(net.state_dict(), weight_path)
+            print('Salvou %d' % t)
         print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' % (epoch, (err_tr/err_tr_cnt), time.time() - time_start))
 
 if __name__ == "__main__":
