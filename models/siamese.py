@@ -161,7 +161,6 @@ def weights_init_uniform_rule(m):
     classname = m.__class__.__name__
     # for every Linear layer in a model..
     if classname.find('Linear') != -1:
-        print('Entrou')
         # get the number of the inputs
         n = m.in_features
         y = 1.0/np.sqrt(n)
