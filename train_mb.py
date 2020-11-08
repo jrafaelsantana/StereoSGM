@@ -173,9 +173,9 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
             err_tr += loss.item()
             err_tr_cnt += 1
+            print('Batch %d' % t)
 
-            torch.save(net.state_dict(), weight_path)
-            print('Salvou %d' % t)
+        torch.save(net.state_dict(), weight_path)
         print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' % (epoch, (err_tr/err_tr_cnt), time.time() - time_start))
 
 if __name__ == "__main__":
