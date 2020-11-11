@@ -131,7 +131,7 @@ class Siamese(nn.Module):
             #conc_tensor = torch.cat((out1, out1_small, out2, out2_small), 1)
             conc_tensor = torch.cat((out1_small, out2_small), 1)
             #print(conc_tensor.shape)
-            conc_tensor = self.norm(conc_tensor)
+            #conc_tensor = self.norm(conc_tensor)
             #conc_tensor = torch.abs(out1_small-out2_small)
             out = self.linear(conc_tensor)
             #out = torch.pow(out, 2)

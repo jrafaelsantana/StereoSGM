@@ -55,9 +55,9 @@ if not os.path.exists('weights/'):
 weight_path = 'weights/trainedweight.pth'
 
 def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_high=6.0, dataset_pos=0.5, patch_height=11, patch_width=11, channel_number=1):
-    
     net = models.Siamese(channel_number).to(device)
-    criterion = torch.nn.BCELoss().to(device)
+
+    criterion = torch.nn.MarginRankingLoss(0.5).to(device)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
@@ -68,17 +68,15 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
     X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray', device)
     nnz = nnz_tr
-    print('Carregou')
     
     x_batch_p_tr = torch.zeros((batch_size*2, channel_number, patch_height, patch_width), dtype=torch.float32).to(device)
     x_batch_n_tr = torch.zeros((batch_size*2, channel_number, patch_height, patch_width), dtype=torch.float32).to(device)
 
-    y_batch_p_tr = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_size, device=device)
-    y_batch_n_tr = torch.linspace(1.0, 1.0, dtype=torch.float, steps=batch_size, device=device)
-
-    perm = torch.randperm(nnz.size()[0])
+    target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=int(batch_size), device=device)
 
     time_start = time.time()
+
+    counter_i = 0
 
     for epoch in range(0, epochs_number):
         net.train()
@@ -86,7 +84,11 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
         err_tr = 0
         err_tr_cnt = 0
 
-        for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
+        perm = torch.randperm(nnz.size()[0])
+
+        for t in range(0, 2048 - int(batch_size/2), int(batch_size/2)):
+        #for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
+            
             for i in range(0, int(batch_size/2)):
                 d_pos = random.uniform(-dataset_pos, dataset_pos)
                 d_neg = random.uniform(dataset_neg_low, dataset_neg_high)
@@ -115,65 +117,63 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 dim4 = int(nnz[ind, 2].item())
                 d = nnz[ind, 3].item()
 
-                lenImg = len(X[img])    # Light qty
+                light = (random.randint(0,10000) % max(2, len(X[img])) - 1) + 1
+                exp = (random.randint(0,10000) % X[img][light].shape[0])
 
-                if lenImg:
-                    light = (random.randint(0,10000) % lenImg)
+                light_ = light
+                exp_ = exp
 
-                    lenExp = X[img][light].shape[0]    # Exp qty
-                    exp = (random.randint(1,10000) % lenExp)
+                if random.random() < 0.2:
+                    exp_ = (random.randint(1,10000) % X[img][light].shape[0])
+                
+                if random.random() < 0.2:
+                    light_ = max(1, light - 1)
 
-                    aux = X[img][light][exp].shape[0]
+                print(len(X[img]))
+                print(X[img][light].shape)
+                print(light)
+                print(light_)
+                print(exp)
+                print(exp_)
+                print(X[img][light][exp].shape)
+                input()
 
-                    light_ = light
-                    exp_ = exp
+                x0 = X[img][light][exp,0]
+                x1 = X[img][light_][exp_,1]
 
-                    if aux > 1:    
-                        if random.random() < 0.2:
-                            exp_ = (random.randint(1,10000) % lenExp)
-                        
-                        if random.random() < 0.2:
-                            light_ = max(1, (random.randint(1,10000) % lenImg))
+                pair1Temp_d = utils.make_patch(x0, (patch_height, patch_width), dim4, dim3, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
+                pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
+                pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
 
-                        x0 = X[img][light][exp,0]
-                        x1 = X[img][light_][exp_,1]
+                x_batch_p_tr[counter_i * 2] = pair1Temp_d
+                x_batch_p_tr[counter_i * 2 + 1] = pair2Temp_d
+                
+                x_batch_n_tr[counter_i * 2] = pair1Temp_d
+                x_batch_n_tr[counter_i * 2 + 1] = pair2TempN_d
 
-                        pair1Temp_d = utils.make_patch(x0, (patch_height, patch_width), dim4, dim3, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
-                        pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
-                        pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
+                target[counter_i] = -1.0
 
-                        # pair1Temp_d = utils.make_patch_cv2(x0, patch_height, dim3, dim4, scale, phi, trans, hshear, brightness, contrast)
-                        # pair2Temp_d = utils.make_patch_cv2(x1, patch_height, dim3, dim4 - d + d_pos, scale_, phi_, trans_, hshear_, brightness_, contrast_)
-                        # pair2TempN_d = utils.make_patch_cv2(x1, patch_height, dim3, dim4 - d + d_neg, scale_, phi_, trans_, hshear_, brightness_, contrast_)
+                counter_i = counter_i + 1
 
-                        x_batch_p_tr[i * 2] = pair1Temp_d
-                        x_batch_p_tr[i * 2 + 1] = pair2Temp_d
-                        
-                        x_batch_n_tr[i * 2] = pair1Temp_d
-                        x_batch_n_tr[i * 2 + 1] = pair2TempN_d
+                if(counter_i == 127):        
 
-                        y_batch_p_tr[i] = 1
-                        y_batch_n_tr[i] = 0
+                    optimizer.zero_grad()
 
-            optimizer.zero_grad()
+                    output = net(x_batch_p_tr, x_batch_n_tr)
+                    output = output.squeeze()
 
-            output = net(x_batch_p_tr, x_batch_n_tr)
-            output = output.squeeze()
+                    output_s = output[::2]
+                    output_n = output[1::2]
 
-            output_s = output[::2]
-            output_n = output[1::2]
+                    loss = criterion(output_s, output_n, target)
 
-            loss_p = criterion(output_s, y_batch_p_tr)
-            loss_n = criterion(output_n, y_batch_n_tr)
+                    loss.backward()
+                    optimizer.step()
 
-            loss = loss_p + loss_n
+                    err_tr += loss.item()
+                    err_tr_cnt += 1
 
-            loss.backward()
-            optimizer.step()
-
-            err_tr += loss.item()
-            err_tr_cnt += 1
-            print('Batch %d' % t)
+                    counter_i = 0
 
         torch.save(net.state_dict(), weight_path)
         print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' % (epoch, (err_tr/err_tr_cnt), time.time() - time_start))
