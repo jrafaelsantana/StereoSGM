@@ -36,10 +36,10 @@ def fromfile(fname, device):
 
 def load (rect, color, device):
     data_dir = 'middlebury/data.mb.%s_%s' % (rect, color)
-    te = fromfile('%s/te.bin' % data_dir, device)
+    #te = fromfile('%s/te.bin' % data_dir, device)
     metadata = fromfile('%s/meta.bin' % data_dir, device)
     nnz_tr = fromfile('%s/nnz_tr.bin' % data_dir, device)
-    nnz_te = fromfile('%s/nnz_te.bin' % data_dir, device)
+    #nnz_te = fromfile('%s/nnz_te.bin' % data_dir, device)
 
     fname_submit = []
 
@@ -69,7 +69,8 @@ def load (rect, color, device):
         if os.path.exists(fname):
             dispnoc.append(fromfile(fname, device))
 
-    return X, te, metadata, nnz_tr, nnz_te
+    #return X, te, metadata, nnz_tr, nnz_te
+    return X, metadata, nnz_tr
 
     '''perm = torch.randperm(nnz.size()[0])
 

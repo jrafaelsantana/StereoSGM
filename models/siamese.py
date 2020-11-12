@@ -1,10 +1,7 @@
-from operator import mod
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from utils import cropND
-
 from utils import cropND
 
 from .groupnorm import GroupNorm
@@ -26,28 +23,6 @@ class Siamese(nn.Module):
         )
 
         self.conv_15 = nn.Sequential(
-            # nn.Conv2d(chn, 32, 3, padding=padding_parameter),
-            # nn.ReLU(),
-
-            # nn.Conv2d(32, 32, 3, padding=padding_parameter),
-            # nn.ReLU(),
-
-            # nn.Conv2d(32, 64, 3, padding=padding_parameter),
-            # nn.ReLU(),
-
-            # nn.Conv2d(64, 64, 3, padding=padding_parameter),
-            # nn.ReLU(),
-
-            # nn.Conv2d(64, 64, 3, padding=padding_parameter),
-            # nn.ReLU(),
-
-            # nn.Conv2d(64, 128, 3, padding=padding_parameter),
-            # nn.ReLU(),
-
-            # nn.Conv2d(128, 128, 3, padding=padding_parameter),
-            # nn.ReLU(),
-
-            # nn.Conv2d(128, 128, 1, padding=padding_parameter),
             nn.Conv2d(chn, 64, 3, padding=padding_parameter),
             nn.ReLU(),
 

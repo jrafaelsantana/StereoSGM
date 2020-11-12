@@ -67,7 +67,8 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
         
     optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
 
-    X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray', device)
+    #X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray', device)
+    X, metadata, nnz_tr = middlebury.load('imperfect', 'gray', device)
     nnz = nnz_tr
     
     x_batch_p_tr = torch.zeros((batch_size*2, channel_number, patch_height, patch_width), dtype=torch.float32).to(device)
@@ -76,8 +77,6 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
     target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=int(batch_size), device=device)
 
     time_start = time.time()
-
-    counter_i = 0
 
     for epoch in range(0, epochs_number):
         net.train()
@@ -137,35 +136,29 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
                 pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
 
-                x_batch_p_tr[counter_i * 2] = pair1Temp_d
-                x_batch_p_tr[counter_i * 2 + 1] = pair2Temp_d
+                x_batch_p_tr[i * 2] = pair1Temp_d
+                x_batch_p_tr[i * 2 + 1] = pair2Temp_d
                 
-                x_batch_n_tr[counter_i * 2] = pair1Temp_d
-                x_batch_n_tr[counter_i * 2 + 1] = pair2TempN_d
+                x_batch_n_tr[i * 2] = pair1Temp_d
+                x_batch_n_tr[i * 2 + 1] = pair2TempN_d
 
-                target[counter_i] = -1.0
+                target[i] = -1.0
 
-                counter_i = counter_i + 1
+            optimizer.zero_grad()
 
-                if(counter_i == 127):        
+            output = net(x_batch_p_tr, x_batch_n_tr)
+            output = output.squeeze()
 
-                    optimizer.zero_grad()
+            output_s = output[::2]
+            output_n = output[1::2]
 
-                    output = net(x_batch_p_tr, x_batch_n_tr)
-                    output = output.squeeze()
+            loss = criterion(output_s, output_n, target)
 
-                    output_s = output[::2]
-                    output_n = output[1::2]
+            loss.backward()
+            optimizer.step()
 
-                    loss = criterion(output_s, output_n, target)
-
-                    loss.backward()
-                    optimizer.step()
-
-                    err_tr += loss.item()
-                    err_tr_cnt += 1
-
-                    counter_i = 0
+            err_tr += loss.item()
+            err_tr_cnt += 1
 
         torch.save(net.state_dict(), weight_path)
         print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' % (epoch, (err_tr/err_tr_cnt), time.time() - time_start))

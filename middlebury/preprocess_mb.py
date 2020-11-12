@@ -187,7 +187,8 @@ for dir in sorted(os.listdir(base1)):
         y, x = np.nonzero(mask == 255)
 
         print(np.array(XX).shape)
-        nnz = nnz_te if len(X) in te else nnz_tr
+        #nnz = nnz_te if len(X) in te else nnz_tr
+        nnz = nnz_tr
         nnz.append(np.column_stack((np.zeros_like(y) + len(X), y, x, disp0[y, x])).astype(np.float32))
         dispnoc.append(disp0.astype(np.float32))
         meta.append((x0.shape[2], x0.shape[3], ndisp))        
@@ -216,7 +217,7 @@ for dir1 in ['trainingH', 'testH']:
 
 meta = np.array(meta, dtype=np.int32)
 nnz_tr = np.vstack(nnz_tr)
-nnz_te = np.vstack(nnz_te)
+#nnz_te = np.vstack(nnz_te)
 
 subprocess.check_call('rm -f {}/*.{{bin,dim,txt,type}} tmp/*'.format(output_dir), shell=True)
 for i in range(len(X)):
@@ -228,6 +229,6 @@ for i in range(len(X)):
         tofile('{}/dispnoc{}.bin'.format(output_dir, i + 1), dispnoc[i])
 tofile('{}/meta.bin'.format(output_dir), meta)
 tofile('{}/nnz_tr.bin'.format(output_dir), nnz_tr)
-tofile('{}/nnz_te.bin'.format(output_dir), nnz_te)
-tofile('{}/te.bin'.format(output_dir), te)
+#tofile('{}/nnz_te.bin'.format(output_dir), nnz_te)
+#tofile('{}/te.bin'.format(output_dir), te)
 open('{}/fname_submit.txt'.format(output_dir), 'w').write('\n'.join(fname_submit))
