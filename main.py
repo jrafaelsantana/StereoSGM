@@ -347,6 +347,8 @@ def sgm(directory):
         costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
 
     best_disp = select_best_disparity(aggregation, max_disparity)
+
+    best_disp = np.float64(best_disp)
     pfm = best_disp.astype(np.float32)
     #utils.write_pfm(PFM_DIR + directory.name + '/disp0DUPLAJANELA7.pfm', pfm)
 
