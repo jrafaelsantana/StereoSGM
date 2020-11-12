@@ -29,6 +29,9 @@ def fromfile(fname, device):
 
     x = x.reshape(dim)
 
+    if typeFile == 'float32' and len(x.size()) == 4:
+        x = x.unsqueeze(0)
+
     return x
 
 def load (rect, color, device):

@@ -11,6 +11,7 @@ import config
 import models
 import utils
 import middlebury
+import cv2
 
 settings = config.Config()
 
@@ -117,7 +118,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 dim4 = int(nnz[ind, 2].item())
                 d = nnz[ind, 3].item()
 
-                light = (random.randint(0,10000) % max(2, len(X[img])) - 1) + 1
+                light = (random.randint(0,10000) % len(X[img]))
                 exp = (random.randint(0,10000) % X[img][light].shape[0])
 
                 light_ = light
@@ -127,16 +128,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                     exp_ = (random.randint(1,10000) % X[img][light].shape[0])
                 
                 if random.random() < 0.2:
-                    light_ = max(1, light - 1)
-
-                print(len(X[img]))
-                print(X[img][light].shape)
-                print(light)
-                print(light_)
-                print(exp)
-                print(exp_)
-                print(X[img][light][exp].shape)
-                input()
+                    light_ = max(0, light - 1)
 
                 x0 = X[img][light][exp,0]
                 x1 = X[img][light_][exp_,1]

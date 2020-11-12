@@ -316,7 +316,7 @@ def select_best_disparity(aggregation_cost, max_disparity):
     begin_time = datetime.datetime.now()
 
     volume = np.sum(aggregation_cost, axis=3)
-    disparity_map = np.argmin(volume, axis=2)
+    disparity_map = np.argmax(volume, axis=2)
 
     print("Best disparity: {}".format(datetime.datetime.now() - begin_time))
 
@@ -349,6 +349,8 @@ def sgm(directory):
     best_disp = select_best_disparity(aggregation, max_disparity)
     pfm = best_disp.astype(np.float32)
     #utils.write_pfm(PFM_DIR + directory.name + '/disp0DUPLAJANELA7.pfm', pfm)
+
+    best_disp *= 255.0/best_disp.max() 
     
     utils.saveDisparity(np.uint8(best_disp), 'resultados/' + directory.name + '_7.png')
 

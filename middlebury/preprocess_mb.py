@@ -137,7 +137,13 @@ for dir in sorted(os.listdir(base1)):
         x1 = read_im(os.path.join(base2_imperfect, 'im1.png'), True)
         x1E = read_im(os.path.join(base2_imperfect, 'im1E.png'), True)
         x1L = read_im(os.path.join(base2_imperfect, 'im1L.png'), True)
-        XX = [np.concatenate((x0, x1, x1E, x1L))]
+        XX = []
+
+        imgs = []
+        imgs.append(np.concatenate((x0, x1)))
+        imgs.append(np.concatenate((x0, x1E)))
+        imgs.append(np.concatenate((x0, x1L)))
+        XX.append(np.array(imgs))
 
         base3 = os.path.join(base2_perfect if rectification == 'perfect' else base2_imperfect, 'ambient')
         num_light = len(os.listdir(base3))
@@ -162,7 +168,9 @@ for dir in sorted(os.listdir(base1)):
                     im = read_im(base4 + '/im{}e{}.png'.format(cam, exp), True)
                     imgs.append(im)
             _, _, height, width = imgs[0].shape
-            XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, num_channels, height, width))
+            teste = np.concatenate(imgs).reshape(len(imgs) // 2, 2, num_channels, height, width)
+            print(teste.shape)
+            XX.append(teste)
 
         disp0, scale0 = load_pfm(os.path.join(base2_imperfect, 'disp0.pfm'), True)
         disp1, scale1 = load_pfm(os.path.join(base2_imperfect, 'disp1.pfm'), True)
@@ -178,7 +186,7 @@ for dir in sorted(os.listdir(base1)):
         disp0[mask != 255] = 0
         y, x = np.nonzero(mask == 255)
 
-        X.append(XX)
+        print(np.array(XX).shape)
         nnz = nnz_te if len(X) in te else nnz_tr
         nnz.append(np.column_stack((np.zeros_like(y) + len(X), y, x, disp0[y, x])).astype(np.float32))
         dispnoc.append(disp0.astype(np.float32))
@@ -213,6 +221,8 @@ nnz_te = np.vstack(nnz_te)
 subprocess.check_call('rm -f {}/*.{{bin,dim,txt,type}} tmp/*'.format(output_dir), shell=True)
 for i in range(len(X)):
     for j in range(len(X[i])):
+        print('{} {}'.format(i, j))
+        print(X[i][j].shape)
         tofile('{}/x_{}_{}.bin'.format(output_dir, i + 1, j + 1), X[i][j])
     if i < len(dispnoc):
         tofile('{}/dispnoc{}.bin'.format(output_dir, i + 1), dispnoc[i])
