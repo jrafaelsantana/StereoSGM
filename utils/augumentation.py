@@ -146,13 +146,13 @@ def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(
     cmat = np.array([[1, hshear, 0], [0, 1, 0], [0, 0, 1]])
     smat = np.array([[scale[0], 0, 0], [0, scale[1], 0], [0, 0, 1]])
     tmat = np.array([[1, 0, trans[0]], [0, 1, trans[1]], [0, 0, 1]])
-    jfmat = np.array([[1, 0, (win_size[0] - 1) / 2], [0, 1, (win_size[1] -1 ) / 2], [0, 0, 1]])  
+    jfmat = np.array([[1, 0, (win_size[0] - 1) / 2], [0, 1, (win_size[1] -1 ) / 2], [0, 0, 1]]) 
     
-    amat = tmat*jmat   
-    amat = smat*amat
-    amat = cmat*amat
-    amat = rmat*amat        
-    amat = jfmat*amat
+    amat = np.matmul(tmat, jmat)
+    amat = np.matmul(smat, amat)
+    amat = np.matmul(cmat, amat)
+    amat = np.matmul(rmat, amat)       
+    amat = np.matmul(jfmat, amat)
     amat_ = amat[:2, :]
     
     dst = cv2.warpAffine(src, amat_, (cols,rows))

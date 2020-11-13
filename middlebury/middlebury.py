@@ -4,7 +4,7 @@ import os.path
 
 from torch._C import dtype
 
-def fromfile(fname, device):
+def fromfile(fname):
     file = open(fname + '.dim', 'r')
     dim = []
 
@@ -18,11 +18,11 @@ def fromfile(fname, device):
     typeFile = file.read()
 
     if typeFile == 'float32':
-        x = torch.FloatTensor(np.fromfile(fname, dtype=np.float32)).to(device)
+        x = torch.FloatTensor(np.fromfile(fname, dtype=np.float32))
     elif typeFile == 'int32':
-        x = torch.IntTensor(np.fromfile(fname, dtype=np.int32)).to(device)
+        x = torch.IntTensor(np.fromfile(fname, dtype=np.int32))
     elif typeFile == 'int64':
-        x = torch.LongTensor(np.fromfile(fname, dtype=np.int64)).to(device)
+        x = torch.LongTensor(np.fromfile(fname, dtype=np.int64))
     else:
         print(fname, typeFile)
         assert(False)
@@ -34,11 +34,11 @@ def fromfile(fname, device):
 
     return x
 
-def load (rect, color, device):
+def load (rect, color):
     data_dir = 'middlebury/data.mb.%s_%s' % (rect, color)
     #te = fromfile('%s/te.bin' % data_dir, device)
-    metadata = fromfile('%s/meta.bin' % data_dir, device)
-    nnz_tr = fromfile('%s/nnz_tr.bin' % data_dir, device)
+    metadata = fromfile('%s/meta.bin' % data_dir)
+    nnz_tr = fromfile('%s/nnz_tr.bin' % data_dir)
     #nnz_te = fromfile('%s/nnz_te.bin' % data_dir, device)
 
     fname_submit = []
@@ -59,7 +59,7 @@ def load (rect, color, device):
             if not os.path.exists(fname):
                 break
 
-            XX.append(fromfile(fname, device))
+            XX.append(fromfile(fname))
             light = light + 1
 
         X.append(XX)
@@ -67,7 +67,7 @@ def load (rect, color, device):
         fname = '%s/dispnoc%d.bin' % (data_dir, n+1)
 
         if os.path.exists(fname):
-            dispnoc.append(fromfile(fname, device))
+            dispnoc.append(fromfile(fname))
 
     #return X, te, metadata, nnz_tr, nnz_te
     return X, metadata, nnz_tr

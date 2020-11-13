@@ -68,11 +68,11 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
     optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
 
     #X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray', device)
-    X, metadata, nnz_tr = middlebury.load('imperfect', 'gray', device)
+    X, metadata, nnz_tr = middlebury.load('imperfect', 'gray')
     nnz = nnz_tr
     
-    x_batch_p_tr = torch.zeros((batch_size*2, channel_number, patch_height, patch_width), dtype=torch.float32).to(device)
-    x_batch_n_tr = torch.zeros((batch_size*2, channel_number, patch_height, patch_width), dtype=torch.float32).to(device)
+    x_batch_p_tr = torch.zeros((batch_size*2, channel_number, patch_height, patch_width), dtype=torch.float32)
+    x_batch_n_tr = torch.zeros((batch_size*2, channel_number, patch_height, patch_width), dtype=torch.float32)
 
     target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=int(batch_size), device=device)
 
@@ -86,8 +86,8 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
         perm = torch.randperm(nnz.size()[0])
 
-        #for t in range(0, 2048 - int(batch_size/2), int(batch_size/2)):
-        for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
+        for t in range(0, 2048 - int(batch_size/2), int(batch_size/2)):
+        #for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
             
             for i in range(0, int(batch_size/2)):
                 d_pos = random.uniform(-dataset_pos, dataset_pos)
@@ -136,6 +136,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
                 pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
 
+
                 x_batch_p_tr[i * 2] = pair1Temp_d
                 x_batch_p_tr[i * 2 + 1] = pair2Temp_d
                 
@@ -145,6 +146,9 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 target[i] = -1.0
 
             optimizer.zero_grad()
+
+            x_batch_n_tr = x_batch_n_tr.to(device)
+            x_batch_p_tr = x_batch_p_tr.to(device)
 
             output = net(x_batch_p_tr, x_batch_n_tr)
             output = output.squeeze()
