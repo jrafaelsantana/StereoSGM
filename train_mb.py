@@ -86,8 +86,8 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
         perm = torch.randperm(nnz.size()[0])
 
-        for t in range(0, 2048 - int(batch_size/2), int(batch_size/2)):
-        #for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
+        #for t in range(0, 2048 - int(batch_size/2), int(batch_size/2)):
+        for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
             
             for i in range(0, int(batch_size/2)):
                 d_pos = random.uniform(-dataset_pos, dataset_pos)
