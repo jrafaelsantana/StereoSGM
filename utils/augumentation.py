@@ -85,7 +85,7 @@ def rotation(img, angle):
     img = cv2.warpAffine(img, M, (w, h))
     return img
 
-def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0, flipH = 1, channel_size = 3):
+'''def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0, flipH = 1, channel_size = 3):
     data = src.unsqueeze(0)
 
     _, ch, rows, cols = data.shape 
@@ -129,6 +129,53 @@ def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(
     
     if len(dst.shape) == 2:
         dst = dst.unsqueeze(0)
+
+    return dst'''
+
+def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0, flipH = 1, channel_size = 3):
+    src = src.numpy()
+    src = src.squeeze()
+
+    rows, cols = src.shape
+
+    c = math.cos(phi)
+    s = math.sin(phi)       
+    
+    jmat = np.array([[1, 0, -x], [0, 1, -y], [0, 0, 1]])
+    rmat = np.array([[c, s, 0], [-s, c, 0], [0, 0, 1]])
+    cmat = np.array([[1, hshear, 0], [0, 1, 0], [0, 0, 1]])
+    smat = np.array([[scale[0], 0, 0], [0, scale[1], 0], [0, 0, 1]])
+    tmat = np.array([[1, 0, trans[0]], [0, 1, trans[1]], [0, 0, 1]])
+    jfmat = np.array([[1, 0, (win_size[0] - 1) / 2], [0, 1, (win_size[1] -1 ) / 2], [0, 0, 1]])  
+    
+    amat = tmat*jmat   
+    amat = smat*amat
+    amat = cmat*amat
+    amat = rmat*amat        
+    amat = jfmat*amat
+    amat_ = amat[:2, :]
+    
+    dst = cv2.warpAffine(src, amat_, (cols,rows))
+    #dst = K.warp_affine(data.float(), amat_, dsize=(cols, rows))
+    dst = dst * contrast
+    dst = dst + brightness
+
+    if channel_size == 3:
+        dst = dst[:, 0:win_size[1], 0:win_size[0]]
+    else:
+        dst = dst[0:win_size[1], 0:win_size[0]]
+    
+    if(flipH == -1):            
+        fmat = np.array([[flipH, 0, win_size[0]-1], [0, 1, 0], [0, 0, 1]])                
+        amat = fmat
+        amat_ = amat[:2, :]
+        #dst = K.warp_affine(data.float(), amat_, dsize=(win_size[0],win_size[1]))
+        dst = cv2.warpAffine(dst, amat_, (win_size[0],win_size[1]))
+    
+    if len(dst.shape) == 2:
+        dst = np.expand_dims(dst, axis=0)
+
+    dst = torch.FloatTensor(dst)
 
     return dst
 
