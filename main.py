@@ -185,7 +185,7 @@ def calc_costs(out1, out2, out1_small, out2_small, max_disparity):
 
             #conc_mat = torch.cat((point_l, point_l_small, point_r, point_r_small), 0) # [Features * 4, Y]
             conc_mat = torch.cat((point_l_small, point_r_small), 0) 
-            conc_mat = net.norm(conc_mat)
+            #conc_mat = net.norm(conc_mat)
             #conc_mat = torch.abs(point_l_small - point_r_small)
 
             # print(conc_mat.shape)
@@ -195,7 +195,7 @@ def calc_costs(out1, out2, out1_small, out2_small, max_disparity):
             result = result.squeeze() # [Y]
             #result = torch.pow(result, 2)
 
-            costs[:, x, nd] = result
+            costs[:, x, nd] = result * (-1)
     return costs
 
     # for y in range(0, int(height) - 1):
