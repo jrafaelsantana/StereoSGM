@@ -16,10 +16,8 @@ class Siamese(nn.Module):
             nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 256, 3, padding=padding_parameter),
+            nn.Conv2d(128, 128, 3, padding=padding_parameter),
             nn.ReLU(),
-
-            nn.Conv2d(256, 128, 1, padding=0),
         )
 
         self.conv_15 = nn.Sequential(
@@ -29,13 +27,14 @@ class Siamese(nn.Module):
             nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 256, 3, padding=padding_parameter),
+            nn.Conv2d(128, 128, 3, padding=padding_parameter),
             nn.ReLU(),
-
-            nn.Conv2d(256, 128, 1, padding=0),
         )
 
         self.full = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+
             nn.Linear(256, 128),
             nn.ReLU(),
 
@@ -44,7 +43,7 @@ class Siamese(nn.Module):
 
             nn.Linear(64, 32),
             nn.ReLU(),
-
+            
             nn.Linear(32, 16),
             nn.ReLU(),
             
@@ -103,8 +102,8 @@ class Siamese(nn.Module):
             #out = torch.sqrt(torch.sum((out1_small - out2_small) * (out1_small - out2_small), 1))
             #out = torch.abs(torch.sum(calc1 + calc2, 1))
 
-            #conc_tensor = torch.cat((out1, out1_small, out2, out2_small), 1)
-            conc_tensor = torch.cat((out1_small, out2_small), 1)
+            conc_tensor = torch.cat((out1, out1_small, out2, out2_small), 1)
+            #conc_tensor = torch.cat((out1_small, out2_small), 1)
             #print(conc_tensor.shape)
             #conc_tensor = self.norm(conc_tensor)
             #conc_tensor = torch.abs(out1_small-out2_small)
@@ -130,7 +129,7 @@ class Siamese(nn.Module):
             out1_small = self.forward_one_7(x1_small)
             out2_small = self.forward_one_7(x2_small)
 
-            return out1_small, out2_small, out1, out2
+            return out1, out1_small, out2, out2_small
 
 def weights_init_uniform_rule(m):
     classname = m.__class__.__name__

@@ -87,7 +87,7 @@ def compute_costs(left, right, max_disparity, patch_height, patch_width, channel
 
     with torch.no_grad():
         begin_time = datetime.datetime.now()
-        out1_small, out2_small, out1, out2 = net(left, right, training=False)
+        out1, out1_small, out2, out2_small = net(left, right, training=False)
         print("Run CNN: {}".format(datetime.datetime.now() - begin_time))
 
         begin_time = datetime.datetime.now()
@@ -183,8 +183,8 @@ def calc_costs(out1, out2, out1_small, out2_small, max_disparity):
             # print(point_l_small.shape)
             # print(point_r_small.shape)
 
-            #conc_mat = torch.cat((point_l, point_l_small, point_r, point_r_small), 0) # [Features * 4, Y]
-            conc_mat = torch.cat((point_l_small, point_r_small), 0) 
+            conc_mat = torch.cat((point_l, point_l_small, point_r, point_r_small), 0) # [Features * 4, Y]
+            #conc_mat = torch.cat((point_l_small, point_r_small), 0) 
             #conc_mat = net.norm(conc_mat)
             #conc_mat = torch.abs(point_l_small - point_r_small)
 

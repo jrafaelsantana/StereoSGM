@@ -11,6 +11,7 @@ import config
 import models
 import utils
 import middlebury
+import cv2
 
 settings = config.Config()
 
@@ -57,7 +58,8 @@ weight_path = 'weights/trainedweight.pth'
 def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_high=6.0, dataset_pos=0.5, patch_height=11, patch_width=11, channel_number=1):
     net = models.Siamese(channel_number).to(device)
 
-    criterion = torch.nn.MarginRankingLoss(0.5).to(device)
+    #criterion = torch.nn.MarginRankingLoss(0.5).to(device)
+    criterion = torch.nn.BCELoss().to(device)
 
     if(weight_path != None and os.path.exists(weight_path)):
         net.load_state_dict(torch.load(weight_path))
@@ -73,7 +75,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
     x_batch_p_tr = torch.zeros((batch_size*2, channel_number, patch_height, patch_width), dtype=torch.float32)
     x_batch_n_tr = torch.zeros((batch_size*2, channel_number, patch_height, patch_width), dtype=torch.float32)
 
-    target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=int(batch_size), device=device)
+    target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=int(2*batch_size), device=device)
 
     time_start = time.time()
 
@@ -84,9 +86,8 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
         err_tr_cnt = 0
 
         perm = torch.randperm(nnz.size()[0])
-        print(perm.shape)
 
-        #for t in range(0, 20480 - int(batch_size/2), int(batch_size/2)):
+        #for t in range(0, 5120 - int(batch_size/2), int(batch_size/2)):
         for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
             for i in range(0, int(batch_size/2)):
                 d_pos = random.uniform(-dataset_pos, dataset_pos)
@@ -141,15 +142,16 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
                 pair1Temp_d = torch.FloatTensor(utils.generate_patch(x0, patch_height, dim4, dim3))
                 pair2Temp_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_pos, dim3))
-                pair2TempN_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4- d + d_neg, dim3))
-
+                pair2TempN_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_neg, dim3))
+                
                 x_batch_p_tr[i * 2] = pair1Temp_d
                 x_batch_p_tr[i * 2 + 1] = pair2Temp_d
                 
                 x_batch_n_tr[i * 2] = pair1Temp_d
                 x_batch_n_tr[i * 2 + 1] = pair2TempN_d
 
-                target[i] = 1.0
+                target[i * 2] = 1.0
+                target[i * 2 + 1] = 0.0
 
             optimizer.zero_grad()
 
@@ -159,10 +161,10 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
             output = net(x_batch_p_tr, x_batch_n_tr)
             output = output.squeeze()
 
-            output_s = output[::2]
-            output_n = output[1::2]
+            #output_s = output[::2]
+            #output_n = output[1::2]
 
-            loss = criterion(output_s, output_n, target)
+            loss = criterion(output, target)
 
             loss.backward()
             optimizer.step()
