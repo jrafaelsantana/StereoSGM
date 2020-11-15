@@ -133,20 +133,19 @@ def rotation(img, angle):
     return dst'''
 
 def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0, flipH = 1, channel_size = 3):
-    src = src.numpy()
-    src = src.squeeze()
+    src = src.numpy().squeeze()
 
     rows, cols = src.shape
 
     c = math.cos(phi)
     s = math.sin(phi)       
     
-    jmat = np.array([[1, 0, -x], [0, 1, -y], [0, 0, 1]])
-    rmat = np.array([[c, s, 0], [-s, c, 0], [0, 0, 1]])
-    cmat = np.array([[1, hshear, 0], [0, 1, 0], [0, 0, 1]])
-    smat = np.array([[scale[0], 0, 0], [0, scale[1], 0], [0, 0, 1]])
-    tmat = np.array([[1, 0, trans[0]], [0, 1, trans[1]], [0, 0, 1]])
-    jfmat = np.array([[1, 0, (win_size[0] - 1) / 2], [0, 1, (win_size[1] -1 ) / 2], [0, 0, 1]]) 
+    jmat = [[1, 0, -x], [0, 1, -y], [0, 0, 1]]
+    rmat = [[c, s, 0], [-s, c, 0], [0, 0, 1]]
+    cmat = [[1, hshear, 0], [0, 1, 0], [0, 0, 1]]
+    smat = [[scale[0], 0, 0], [0, scale[1], 0], [0, 0, 1]]
+    tmat = [[1, 0, trans[0]], [0, 1, trans[1]], [0, 0, 1]]
+    jfmat = [[1, 0, (win_size[0] - 1) / 2], [0, 1, (win_size[1] -1 ) / 2], [0, 0, 1]]
     
     amat = np.matmul(tmat, jmat)
     amat = np.matmul(smat, amat)
@@ -207,3 +206,36 @@ def make_patch_cv2 (src, ws, dim3, dim4, scale=(1.0,1.0), phi=-0.05, trans=(0.1,
 
     return warp
 
+def generate_patch (src, patch_size, x, y):
+    ch, rows, cols = src.shape
+    
+    x = int(x)
+    y = int(y)
+    
+    window = torch.zeros((ch, patch_size, patch_size))
+    center_height = int(patch_size/2)
+
+    pad_l = 0 
+    pad_r = 0
+    pad_t = 0
+    pad_b = 0
+
+    if x - center_height < 0:
+        pad_l = abs(x - center_height)
+    
+    if x + center_height + 1 > cols:
+        pad_r = abs((x + center_height + 1) - cols)
+
+    if y - center_height < 0:
+        pad_t = abs(y - center_height)
+
+    if y + center_height + 1 > rows:
+        pad_b = abs((y + center_height + 1) - rows)
+
+    if pad_l > patch_size or pad_r > patch_size or pad_t > patch_size or pad_b > patch_size:
+        return window
+
+    crop = src[:, max(0, (y-center_height)):min(rows, (y+center_height+1)), max(0, (x-center_height)):min(cols, (x+center_height+1))]
+    window[:, pad_t:patch_size-pad_b, pad_l:patch_size-pad_r] = crop
+
+    return window

@@ -1,4 +1,4 @@
-from numpy import zeros, pad, uint8, float64
+from numpy import zeros, pad, uint8, float64, empty
 from cv2 import normalize, NORM_MINMAX, imread
 import operator
 
@@ -62,6 +62,7 @@ def census_transformation(image, census_kernel):
             census[i, j] = ce
 
     return census
+
 
 def cropND(img, bounding):
     """

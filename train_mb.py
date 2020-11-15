@@ -75,8 +75,6 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
     target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=int(batch_size), device=device)
 
-    center_height = int(patch_height/2)
-
     time_start = time.time()
 
     for epoch in range(0, epochs_number):
@@ -86,8 +84,9 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
         err_tr_cnt = 0
 
         perm = torch.randperm(nnz.size()[0])
+        print(perm.shape)
 
-        #for t in range(0, 5120 - int(batch_size/2), int(batch_size/2)):
+        #for t in range(0, 20480 - int(batch_size/2), int(batch_size/2)):
         for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
             for i in range(0, int(batch_size/2)):
                 d_pos = random.uniform(-dataset_pos, dataset_pos)
@@ -136,15 +135,19 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 #pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
                 #pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
                 
-                pair1Temp_d = x0[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-center_height) : int(dim4+center_height+1)]
-                pair2Temp_d = x1[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-d+d_pos-center_height) : int(dim4-d+d_pos+center_height+1)]
-                pair2TempN_d = x1[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-d+d_neg-center_height) : int(dim4-d+d_neg+center_height+1)]
+                # pair1Temp_d = x0[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-center_height) : int(dim4+center_height+1)]
+                # pair2Temp_d = x1[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-d+d_pos-center_height) : int(dim4-d+d_pos+center_height+1)]
+                # pair2TempN_d = x1[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-d+d_neg-center_height) : int(dim4-d+d_neg+center_height+1)]
 
-                x_batch_p_tr[i * 2, :, patch_height - pair1Temp_d.shape[1]:, patch_width -  pair1Temp_d.shape[2]:] = pair1Temp_d
-                x_batch_p_tr[i * 2 + 1, :, patch_height - pair2Temp_d.shape[1]:, patch_width -  pair2Temp_d.shape[2]:] = pair2Temp_d
+                pair1Temp_d = torch.FloatTensor(utils.generate_patch(x0, patch_height, dim4, dim3))
+                pair2Temp_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_pos, dim3))
+                pair2TempN_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4- d + d_neg, dim3))
+
+                x_batch_p_tr[i * 2] = pair1Temp_d
+                x_batch_p_tr[i * 2 + 1] = pair2Temp_d
                 
-                x_batch_n_tr[i * 2, :, patch_height - pair1Temp_d.shape[1]:, patch_width -  pair1Temp_d.shape[2]:] = pair1Temp_d
-                x_batch_n_tr[i * 2 + 1, :, patch_height - pair2TempN_d.shape[1]:, patch_width -  pair2TempN_d.shape[2]:] = pair2TempN_d
+                x_batch_n_tr[i * 2] = pair1Temp_d
+                x_batch_n_tr[i * 2 + 1] = pair2TempN_d
 
                 target[i] = 1.0
 
