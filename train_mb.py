@@ -66,7 +66,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
     else:
         net.apply(models.weights_init_uniform_rule)
         
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.000001, eps=1e-08, weight_decay=0.0000005)
 
     #X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray', device)
     X, metadata, nnz_tr = middlebury.load('imperfect', 'gray')
@@ -87,7 +87,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
         perm = torch.randperm(nnz.size()[0])
 
-        #for t in range(0, 5120 - int(batch_size/2), int(batch_size/2)):
+        #for t in range(0, 4096 - int(batch_size/2), int(batch_size/2)):
         for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
             for i in range(0, int(batch_size/2)):
                 d_pos = random.uniform(-dataset_pos, dataset_pos)
@@ -97,7 +97,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                     d_neg = -d_neg
                 
                 # Augumentation
-                # s = 1
+                s = 1
                 # scale = [1,1]
                 # hshear = 0
                 # trans = [0,0]
@@ -132,9 +132,9 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 x0 = X[img][light][exp,0]
                 x1 = X[img][light_][exp_,1]
                 
-                #pair1Temp_d = utils.make_patch(x0, (patch_height, patch_width), dim4, dim3, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
-                #pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
-                #pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
+                # pair1Temp_d = utils.make_patch(x0, (patch_height, patch_width), dim4, dim3, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
+                # pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
+                # pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
                 
                 # pair1Temp_d = x0[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-center_height) : int(dim4+center_height+1)]
                 # pair2Temp_d = x1[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-d+d_pos-center_height) : int(dim4-d+d_pos+center_height+1)]
@@ -172,7 +172,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
             err_tr += loss.item()
             err_tr_cnt += 1
 
-        torch.save(net.state_dict(), weight_path)
+        torch.save(net.state_dict(), 'weights/trainedweight{}.pth'.format(epoch))
         print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' % (epoch, (err_tr/err_tr_cnt), time.time() - time_start))
 
 if __name__ == "__main__":

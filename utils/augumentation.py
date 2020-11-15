@@ -85,53 +85,6 @@ def rotation(img, angle):
     img = cv2.warpAffine(img, M, (w, h))
     return img
 
-'''def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0, flipH = 1, channel_size = 3):
-    data = src.unsqueeze(0)
-
-    _, ch, rows, cols = data.shape 
-    c = math.cos(phi)
-    s = math.sin(phi)       
-    
-    jmat = torch.FloatTensor([[1, 0, -x], [0, 1, -y], [0, 0, 1]]).to(device)
-    rmat = torch.FloatTensor([[c, s, 0], [-s, c, 0], [0, 0, 1]]).to(device)
-    cmat = torch.FloatTensor([[1, hshear, 0], [0, 1, 0], [0, 0, 1]]).to(device)
-    smat = torch.FloatTensor([[scale[0], 0, 0], [0, scale[1], 0], [0, 0, 1]]).to(device)
-    tmat = torch.FloatTensor([[1, 0, trans[0]], [0, 1, trans[1]], [0, 0, 1]]).to(device)
-    jfmat = torch.FloatTensor([[1, 0, (win_size[0] - 1) / 2], [0, 1, (win_size[1] -1 ) / 2], [0, 0, 1]]).to(device)   
-    
-    amat = torch.mm(tmat,jmat)        
-    amat = torch.mm(smat,amat)
-    amat = torch.mm(cmat,amat)
-    amat = torch.mm(rmat,amat)        
-    amat = torch.mm(jfmat,amat)
-    amat_ = amat[:2, :]
-    amat_ - amat_.unsqueeze_(0)
-    
-    #dst = cv2.warpAffine(src, amat_, (cols,rows))
-    dst = K.warp_affine(data.float(), amat_, dsize=(cols, rows)).to(device)
-    dst = dst * contrast
-    dst = dst + brightness
-    dst = dst.squeeze()
-
-    if channel_shift == 3:
-        dst = dst[:, 0:win_size[1], 0:win_size[0]]
-    else:
-        dst = dst[0:win_size[1], 0:win_size[0]]
-    
-    if(flipH == -1):            
-        fmat = torch.FloatTensor([[flipH, 0, win_size[0]-1], [0, 1, 0], [0, 0, 1]]).to(device)                
-        amat = fmat
-        amat_ = amat[:2, :]
-        amat_ - amat_.unsqueeze_(0)
-        dst = K.warp_affine(data.float(), amat_, dsize=(win_size[0],win_size[1]))
-        dst = dst.squeeze()
-        #dst = cv2.warpAffine(dst, amat_, (win_size[0],win_size[1]))
-    
-    if len(dst.shape) == 2:
-        dst = dst.unsqueeze(0)
-
-    return dst'''
-
 def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(0.1,0.1), hshear=0.2, brightness=0.0, contrast=1.0, flipH = 1, channel_size = 3):
     src = src.numpy().squeeze()
 
@@ -147,29 +100,29 @@ def make_patch (src, win_size, x, y, device, scale=(1.0,1.0), phi=-0.05, trans=(
     tmat = [[1, 0, trans[0]], [0, 1, trans[1]], [0, 0, 1]]
     jfmat = [[1, 0, (win_size[0] - 1) / 2], [0, 1, (win_size[1] -1 ) / 2], [0, 0, 1]]
     
-    amat = np.matmul(tmat, jmat)
+    '''amat = np.matmul(tmat, jmat)
     amat = np.matmul(smat, amat)
     amat = np.matmul(cmat, amat)
-    amat = np.matmul(rmat, amat)       
-    amat = np.matmul(jfmat, amat)
+    amat = np.matmul(rmat, amat) '''     
+    amat = np.matmul(jfmat, jmat)
     amat_ = amat[:2, :]
     
     dst = cv2.warpAffine(src, amat_, (cols,rows))
     #dst = K.warp_affine(data.float(), amat_, dsize=(cols, rows))
-    dst = dst * contrast
-    dst = dst + brightness
+    #dst = dst * contrast
+    #dst = dst + brightness
 
     if channel_size == 3:
         dst = dst[:, 0:win_size[1], 0:win_size[0]]
     else:
         dst = dst[0:win_size[1], 0:win_size[0]]
     
-    if(flipH == -1):            
+    '''if(flipH == -1):            
         fmat = np.array([[flipH, 0, win_size[0]-1], [0, 1, 0], [0, 0, 1]])                
         amat = fmat
         amat_ = amat[:2, :]
         #dst = K.warp_affine(data.float(), amat_, dsize=(win_size[0],win_size[1]))
-        dst = cv2.warpAffine(dst, amat_, (win_size[0],win_size[1]))
+        dst = cv2.warpAffine(dst, amat_, (win_size[0],win_size[1]))'''
     
     if len(dst.shape) == 2:
         dst = np.expand_dims(dst, axis=0)
