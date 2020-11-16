@@ -16,8 +16,10 @@ class Siamese(nn.Module):
             nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 3, padding=padding_parameter),
+            nn.Conv2d(128, 256, 3, padding=padding_parameter),
             nn.ReLU(),
+
+            nn.Conv2d(256, 128, 1, padding=padding_parameter),
         )
 
         self.conv_15 = nn.Sequential(
@@ -27,8 +29,10 @@ class Siamese(nn.Module):
             nn.Conv2d(64, 128, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 128, 3, padding=padding_parameter),
+            nn.Conv2d(128, 256, 3, padding=padding_parameter),
             nn.ReLU(),
+
+            nn.Conv2d(256, 128, 1, padding=padding_parameter),
         )
 
         self.full = nn.Sequential(

@@ -66,7 +66,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
     else:
         net.apply(models.weights_init_uniform_rule)
         
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.000001, eps=1e-08, weight_decay=0.0000005)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
 
     #X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray', device)
     X, metadata, nnz_tr = middlebury.load('imperfect', 'gray')
@@ -87,8 +87,8 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
         perm = torch.randperm(nnz.size()[0])
 
-        #for t in range(0, 4096 - int(batch_size/2), int(batch_size/2)):
-        for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
+        for t in range(0, 4096 - int(batch_size/2), int(batch_size/2)):
+        #for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
             for i in range(0, int(batch_size/2)):
                 d_pos = random.uniform(-dataset_pos, dataset_pos)
                 d_neg = random.uniform(dataset_neg_low, dataset_neg_high)
@@ -98,18 +98,18 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 
                 # Augumentation
                 s = 1
-                # scale = [1,1]
-                # hshear = 0
-                # trans = [0,0]
-                # phi = random.uniform(-ROTATE * math.pi / 180, ROTATE * math.pi / 180)
-                # brightness = 0
-                # contrast = random.uniform(1 / CONTRAST, CONTRAST)
-                # scale_ = [1,1]
-                # hshear_ = 0
-                # trans_ = [0,0]
-                # phi_ = phi + random.uniform(-D_ROTATE * math.pi / 180, D_ROTATE * math.pi / 180)
-                # brightness_ = 0
-                # contrast_ = contrast * random.uniform(1 / D_CONTRAST, D_CONTRAST)
+                scale = [1,1]
+                hshear = 0
+                trans = [0,0]
+                phi = random.uniform(-ROTATE * math.pi / 180, ROTATE * math.pi / 180)
+                brightness = 0
+                contrast = random.uniform(1 / CONTRAST, CONTRAST)
+                scale_ = [1,1]
+                hshear_ = 0
+                trans_ = [0,0]
+                phi_ = phi + random.uniform(-D_ROTATE * math.pi / 180, D_ROTATE * math.pi / 180)
+                brightness_ = 0
+                contrast_ = contrast * random.uniform(1 / D_CONTRAST, D_CONTRAST)
 
                 ind = perm[t + i]
                 img = int(nnz[ind, 0].item())
@@ -132,17 +132,17 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 x0 = X[img][light][exp,0]
                 x1 = X[img][light_][exp_,1]
                 
-                # pair1Temp_d = utils.make_patch(x0, (patch_height, patch_width), dim4, dim3, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
-                # pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
-                # pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
+                pair1Temp_d = utils.make_patch(x0, (patch_height, patch_width), dim4, dim3, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
+                pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
+                pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
                 
                 # pair1Temp_d = x0[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-center_height) : int(dim4+center_height+1)]
                 # pair2Temp_d = x1[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-d+d_pos-center_height) : int(dim4-d+d_pos+center_height+1)]
                 # pair2TempN_d = x1[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-d+d_neg-center_height) : int(dim4-d+d_neg+center_height+1)]
 
-                pair1Temp_d = torch.FloatTensor(utils.generate_patch(x0, patch_height, dim4, dim3))
-                pair2Temp_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_pos, dim3))
-                pair2TempN_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_neg, dim3))
+                # pair1Temp_d = torch.FloatTensor(utils.generate_patch(x0, patch_height, dim4, dim3))
+                # pair2Temp_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_pos, dim3))
+                # pair2TempN_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_neg, dim3))
                 
                 x_batch_p_tr[i * 2] = pair1Temp_d
                 x_batch_p_tr[i * 2 + 1] = pair2Temp_d
