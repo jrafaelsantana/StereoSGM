@@ -97,19 +97,19 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                     d_neg = -d_neg
                 
                 # Augumentation
-                s = 1
-                scale = [1,1]
-                hshear = 0
-                trans = [0,0]
-                phi = random.uniform(-ROTATE * math.pi / 180, ROTATE * math.pi / 180)
-                brightness = 0
-                contrast = random.uniform(1 / CONTRAST, CONTRAST)
-                scale_ = [1,1]
-                hshear_ = 0
-                trans_ = [0,0]
-                phi_ = phi + random.uniform(-D_ROTATE * math.pi / 180, D_ROTATE * math.pi / 180)
-                brightness_ = 0
-                contrast_ = contrast * random.uniform(1 / D_CONTRAST, D_CONTRAST)
+                # s = 1
+                # scale = [1,1]
+                # hshear = 0
+                # trans = [0,0]
+                # phi = random.uniform(-ROTATE * math.pi / 180, ROTATE * math.pi / 180)
+                # brightness = 0
+                # contrast = random.uniform(1 / CONTRAST, CONTRAST)
+                # scale_ = [1,1]
+                # hshear_ = 0
+                # trans_ = [0,0]
+                # phi_ = phi + random.uniform(-D_ROTATE * math.pi / 180, D_ROTATE * math.pi / 180)
+                # brightness_ = 0
+                # contrast_ = contrast * random.uniform(1 / D_CONTRAST, D_CONTRAST)
 
                 ind = perm[t + i]
                 img = int(nnz[ind, 0].item())
@@ -132,17 +132,17 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
                 x0 = X[img][light][exp,0]
                 x1 = X[img][light_][exp_,1]
                 
-                pair1Temp_d = utils.make_patch(x0, (patch_height, patch_width), dim4, dim3, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
-                pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
-                pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
+                # pair1Temp_d = utils.make_patch(x0, (patch_height, patch_width), dim4, dim3, device, scale, phi, trans, hshear, brightness, contrast, channel_size=channel_number)
+                # pair2Temp_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_pos, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
+                # pair2TempN_d = utils.make_patch(x1, (patch_height, patch_width), dim4 - d + d_neg, dim3, device, scale_, phi_, trans_, hshear_, brightness_, contrast_, channel_size=channel_number)
                 
                 # pair1Temp_d = x0[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-center_height) : int(dim4+center_height+1)]
                 # pair2Temp_d = x1[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-d+d_pos-center_height) : int(dim4-d+d_pos+center_height+1)]
                 # pair2TempN_d = x1[:, int(dim3-center_height) : int(dim3+center_height+1), int(dim4-d+d_neg-center_height) : int(dim4-d+d_neg+center_height+1)]
 
-                # pair1Temp_d = torch.FloatTensor(utils.generate_patch(x0, patch_height, dim4, dim3))
-                # pair2Temp_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_pos, dim3))
-                # pair2TempN_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_neg, dim3))
+                pair1Temp_d = torch.FloatTensor(utils.generate_patch(x0, patch_height, dim4, dim3))
+                pair2Temp_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_pos, dim3))
+                pair2TempN_d = torch.FloatTensor(utils.generate_patch(x1, patch_height, dim4 - d + d_neg, dim3))
                 
                 x_batch_p_tr[i * 2] = pair1Temp_d
                 x_batch_p_tr[i * 2 + 1] = pair2Temp_d
@@ -183,7 +183,7 @@ if __name__ == "__main__":
         epochs_number = EPOCHS_NUMBER,
         device = DEVICE,
         dataset_neg_low = 1.5,
-        dataset_neg_high = 6,
+        dataset_neg_high = 18,
         dataset_pos = 0.5,
         patch_height = PATCH_HEIGHT,
         patch_width = PATCH_WIDTH,

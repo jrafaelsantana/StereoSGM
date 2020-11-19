@@ -350,7 +350,8 @@ def sgm(directory):
 
     best_disp = np.float64(best_disp)
     pfm = best_disp.astype(np.float32)
-    #utils.write_pfm(PFM_DIR + directory.name + '/disp0DUPLAJANELA7.pfm', pfm)
+    #utils.write_pfm(PFM_DIR + directory.name + '/disp0MULTIJANELA19HALF.pfm', pfm)
+    utils.write_pfm('resultados/{}_disp0MULTIJANELA19HALF.pfm'.format(directory.name), pfm)
 
     #best_disp *= 255.0/best_disp.max() 
     

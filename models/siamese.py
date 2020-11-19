@@ -19,39 +19,45 @@ class Siamese(nn.Module):
             nn.Conv2d(128, 256, 3, padding=padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(256, 128, 1, padding=padding_parameter),
+            nn.Conv2d(256, 128, 1, padding=0),
         )
 
         self.conv_15 = nn.Sequential(
-            nn.Conv2d(chn, 64, 3, padding=padding_parameter),
+            nn.Conv2d(chn, 64, 7, padding=3*padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(64, 128, 3, padding=padding_parameter),
+            nn.Conv2d(64, 128, 5, padding=2*padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(128, 256, 3, padding=padding_parameter),
+            nn.Conv2d(128, 256, 5, padding=2*padding_parameter),
             nn.ReLU(),
 
-            nn.Conv2d(256, 128, 1, padding=padding_parameter),
+            nn.Conv2d(256, 128, 1, padding=0),
         )
 
         self.full = nn.Sequential(
-            nn.Linear(512, 256),
+            nn.Linear(512, 1024),
             nn.ReLU(),
 
-            nn.Linear(256, 128),
+            nn.Linear(1024, 1024),
             nn.ReLU(),
 
-            nn.Linear(128, 64),
+            nn.Linear(1024, 1024),
             nn.ReLU(),
 
-            nn.Linear(64, 32),
+            nn.Linear(1024, 1024),
             nn.ReLU(),
             
-            nn.Linear(32, 16),
+            nn.Linear(1024, 1024),
+            nn.ReLU(),
+
+            nn.Linear(1024, 1024),
+            nn.ReLU(),
+
+            nn.Linear(1024, 1024),
             nn.ReLU(),
             
-            nn.Linear(16, 1),
+            nn.Linear(1024, 1),
             nn.Sigmoid()
         )
 
@@ -84,11 +90,11 @@ class Siamese(nn.Module):
             x1_small = cropND(x1, (batch_size, channel_size, width_small, height_small))
             x2_small = cropND(x2, (batch_size, channel_size, width_small, height_small))
 
-            x1_down = nn.functional.interpolate(x1, scale_factor=0.5, mode='bilinear')
-            x2_down = nn.functional.interpolate(x2, scale_factor=0.5, mode='bilinear')
+            #x1_down = nn.functional.interpolate(x1, scale_factor=0.5, mode='bilinear')
+            #x2_down = nn.functional.interpolate(x2, scale_factor=0.5, mode='bilinear')
 
-            out1 = self.forward_one_15(x1_down)
-            out2 = self.forward_one_15(x2_down)
+            out1 = self.forward_one_15(x1)
+            out2 = self.forward_one_15(x2)
             out1 = out1.view(out1.size()[0], -1)
             out2 = out2.view(out2.size()[0], -1)
 
@@ -117,21 +123,21 @@ class Siamese(nn.Module):
             return out
         
         else:
-            x1_down = nn.functional.interpolate(x1, scale_factor=0.5, mode='bilinear')
-            x2_down = nn.functional.interpolate(x2, scale_factor=0.5, mode='bilinear')
+            #x1_down = nn.functional.interpolate(x1, scale_factor=0.5, mode='bilinear')
+            #x2_down = nn.functional.interpolate(x2, scale_factor=0.5, mode='bilinear')
 
-            out1 = self.forward_one_15(x1_down)
-            out2 = self.forward_one_15(x2_down)
+            out1 = self.forward_one_15(x1)
+            out2 = self.forward_one_15(x2)
 
             batch_size, channel_size, width, height = x1.shape
             width_small = int(width/2)
             height_small = int(height/2)
 
-            x1_small = cropND(x1, (batch_size, channel_size, width_small, height_small))
-            x2_small = cropND(x2, (batch_size, channel_size, width_small, height_small))
+            #x1_small = cropND(x1, (batch_size, channel_size, width_small, height_small))
+            #x2_small = cropND(x2, (batch_size, channel_size, width_small, height_small))
 
-            out1_small = self.forward_one_7(x1_small)
-            out2_small = self.forward_one_7(x2_small)
+            out1_small = self.forward_one_7(x1)
+            out2_small = self.forward_one_7(x2)
 
             return out1, out1_small, out2, out2_small
 
