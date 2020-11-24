@@ -66,7 +66,8 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
     else:
         net.apply(models.weights_init_uniform_rule)
         
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
+    #optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
     #X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray', device)
     X, metadata, nnz_tr = middlebury.load('imperfect', 'gray')
@@ -80,7 +81,7 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
     time_start = time.time()
 
     data = torch.randperm(nnz.size()[0])
-    data = data[0:10240]
+    data = data[0:204800]
 
     for epoch in range(0, epochs_number):
         net.train()
