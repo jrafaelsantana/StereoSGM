@@ -106,9 +106,11 @@ def tofile(fname, x):
         open(fname + '.type', 'w').write(str(x.dtype))
         open(fname + '.dim', 'w').write('\n'.join(map(str, x.shape)))
 
-rectification, color = sys.argv[1:]
+rectification, color, qty_patch = sys.argv[1:]
+qty_patch = int(qty_patch)
 assert(rectification in set(['perfect', 'imperfect']))
 assert(color in set(['gray', 'rgb']))
+assert(qty_patch >= 1)
 output_dir = 'data.mb.{}_{}'.format(rectification, color)
 assert(os.path.isdir(output_dir))
 
@@ -184,7 +186,10 @@ for dir in sorted(os.listdir(base1)):
 
         mask = cv2.imread('tmp/mask.png', 0)
         disp0[mask != 255] = 0
-        y, x = np.nonzero(mask == 255)
+        y, x = np.nonzero(mask == 255)[0:qty_patch]
+
+        y = y[0:qty_patch]
+        x = x[0:qty_patch]
 
         print(np.array(XX).shape)
         #nnz = nnz_te if len(X) in te else nnz_tr

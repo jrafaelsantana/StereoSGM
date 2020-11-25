@@ -32,7 +32,7 @@ PENALTY_BIGGER_THEN_1 = float(settings.penalty_bigger_than_1)
 
 PFM_DIR = '/home/rafael/Desenvolvimento/MiddleburySDK/MiddEval3/trainingQ/'
 
-weight_path = 'weights/trainedweight14.pth'
+weight_path = 'weights/trainedweight25.pth'
 
 
 """
@@ -355,7 +355,7 @@ def sgm(directory):
 
     pfm = best_disp.astype(np.float32)
     #utils.write_pfm(PFM_DIR + directory.name + '/disp0MULTIJANELA19HALF.pfm', pfm)
-    utils.write_pfm('resultados/{}_disp0MULTIJANELA14HALF.pfm'.format(directory.name), pfm)
+    utils.write_pfm('resultados/{}_disp0MULTIJANELA25HALF.pfm'.format(directory.name), pfm)
 
     #best_disp *= 255.0/best_disp.max() 
     

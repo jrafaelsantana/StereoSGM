@@ -80,19 +80,16 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
     time_start = time.time()
 
-    data = torch.randperm(nnz.size()[0])
-    data = data[0:204800]
-
     for epoch in range(0, epochs_number):
         net.train()
 
         err_tr = 0
         err_tr_cnt = 0
 
-        perm = torch.randperm(data.size()[0])
+        perm = torch.randperm(nnz.size()[0])
 
-        for t in range(0, data.shape[0] - int(batch_size/2), int(batch_size/2)):
-        #for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
+        #for t in range(0, len(data) - int(batch_size/2), int(batch_size/2)):
+        for t in range(0, nnz.size()[0] - int(batch_size/2), int(batch_size/2)):
             for i in range(0, int(batch_size/2)):
                 d_pos = random.uniform(-dataset_pos, dataset_pos)
                 d_neg = random.uniform(dataset_neg_low, dataset_neg_high)
