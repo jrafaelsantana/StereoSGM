@@ -1,4 +1,0 @@
-/home/lucascambuim/projetos/StereoSGM/lib/sgm_gpu/CMakeFiles/rebuild_cache.dir
-/home/lucascambuim/projetos/StereoSGM/lib/sgm_gpu/CMakeFiles/edit_cache.dir
-/home/lucascambuim/projetos/StereoSGM/lib/sgm_gpu/CMakeFiles/sgm_gpu.dir
-/home/lucascambuim/projetos/StereoSGM/lib/sgm_gpu/CMakeFiles/cuda_lib.dir
