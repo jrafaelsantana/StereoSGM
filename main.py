@@ -32,6 +32,14 @@ CHANNEL_NUMBER = int(settings.channel_number)
 PENALTY_EQUAL_1 = float(settings.penalty_equal_1)
 PENALTY_BIGGER_THEN_1 = float(settings.penalty_bigger_than_1)
 
+pi1 = 1
+pi2 = 2
+tau_so = 0.08
+alpha1 = 1.5
+sgm_q1 = 2
+sgm_q2 = 1
+direction = 1
+
 PFM_DIR = '/home/rafael/Desenvolvimento/MiddleburySDK/MiddEval3/trainingQ/'
 
 weight_path = 'weights/trainedweight3.pth'
@@ -345,7 +353,7 @@ def sgm(directory):
     costs = compute_costs(left, right, max_disparity,
                           PATCH_HEIGHT, PATCH_WIDTH, CHANNEL_NUMBER, DEVICE)
 
-    best_disp = scratch_lib.disp_calc(left, right, costs)
+    best_disp = scratch_lib.disp_calc(left, right, costs, pi1, pi2, tau_so, alpha1, sgm_q1, sgm_q2, direction)
     #cv2.imshow('disp_map', disp_map)
     #cv2.waitKey(0)
 

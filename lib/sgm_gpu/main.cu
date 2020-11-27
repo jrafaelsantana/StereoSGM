@@ -133,7 +133,7 @@ __global__ void sgm2(float *x0, float *x1, float *input, float *output, float *t
 	tmp[d * size2 + blockIdx.x] = val;
 }
 
-int sgm2(cv::Mat left, cv::Mat right, cv::Mat cost, cv::Mat &output, cv::Mat &tmp)
+int sgm2(cv::Mat left, cv::Mat right, cv::Mat cost, cv::Mat &output, float pi1, float pi2, float tau_so, float alpha1, float sgm_q1, float sgm_q2, int direction)
 {
 
 	float *x0 = (float *)left.data;
@@ -162,8 +162,8 @@ int sgm2(cv::Mat left, cv::Mat right, cv::Mat cost, cv::Mat &output, cv::Mat &tm
 	int size1 = left.rows * cost.size[2];
 	int size2 = left.cols * cost.size[2];
 	int disp_max = cost.size[2];
-	float pi1 = 1, pi2 = 2, tau_so = 0.08, alpha1 = 1.5, sgm_q1 = 2, sgm_q2 = 1	;
-	int direction = 1;
+	//float pi1 = 1, pi2 = 2, tau_so = 0.08, alpha1 = 1.5, sgm_q1 = 2, sgm_q2 = 1	;
+	//int direction = 1;
 	
 
 	for (int step = 0; step < left.cols; step++) {
@@ -234,7 +234,7 @@ int sgm2(cv::Mat left, cv::Mat right, cv::Mat cost, cv::Mat &output, cv::Mat &tm
 	return 0;
 }
 
-np::ndarray dispCalc(np::ndarray& img1_nd, np::ndarray& img2_nd, np::ndarray& costs_nd)
+np::ndarray dispCalc(np::ndarray& img1_nd, np::ndarray& img2_nd, np::ndarray& costs_nd, float pi1, float pi2, float tau_so, float alpha1, float sgm_q1, float sgm_q2, int direction)
 {
     //int a = 10;
     //Mat imgL = cv::Mat(cv::Size(img1_nd.get_shape()[1], img1_nd.get_shape()[0], img1_nd.get_shape()[2]), CV_32FC1, img1_nd.get_data()); 
@@ -253,7 +253,7 @@ np::ndarray dispCalc(np::ndarray& img1_nd, np::ndarray& img2_nd, np::ndarray& co
     //int size[3] = {costs_nd.get_shape()[0] , costs_nd.get_shape()[1] , costs_nd.get_shape()[2]  };
 
     Mat output = cv::Mat::zeros(3, size, CV_32FC1); 
-    Mat tmp = cv::Mat::zeros(cv::Size(img1_nd.get_shape()[1], img1_nd.get_shape()[0]), CV_32FC1); 
+    //Mat tmp = cv::Mat::zeros(cv::Size(img1_nd.get_shape()[1], img1_nd.get_shape()[0]), CV_32FC1); 
 
 
 
@@ -292,7 +292,7 @@ np::ndarray dispCalc(np::ndarray& img1_nd, np::ndarray& img2_nd, np::ndarray& co
     // << "antes" << endl;
     //getchar();
 
-    sgm2(imgL, imgR, costs, output, tmp);
+    sgm2(imgL, imgR, costs, output, pi1, pi2, tau_so,  alpha1, sgm_q1, sgm_q2, direction);
 
 
     /*for(int row = 0; row < 25; row++){
