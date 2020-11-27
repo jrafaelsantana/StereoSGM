@@ -10,6 +10,15 @@ import subprocess
 import numpy as np
 import cv2
 
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(dotenv_path=Path('..') / '.env')
+
+PATCH_WIDTH = int(os.getenv('PATCH_WIDTH'))
+CENTER_PATCH = int(PATCH_WIDTH/2)
+QTY_TRAIN = int(os.getenv('TRAIN_CORRECT'))
+
 def load_pfm(fname, downsample):
   if downsample:
         if not os.path.isfile(fname + '.H.pfm'):
@@ -106,13 +115,14 @@ def tofile(fname, x):
         open(fname + '.type', 'w').write(str(x.dtype))
         open(fname + '.dim', 'w').write('\n'.join(map(str, x.shape)))
 
-rectification, color, qty_patch = sys.argv[1:]
-qty_patch = int(qty_patch)
+rectification, color = sys.argv[1:]
 assert(rectification in set(['perfect', 'imperfect']))
 assert(color in set(['gray', 'rgb']))
-assert(qty_patch >= 1)
+
 output_dir = 'data.mb.{}_{}'.format(rectification, color)
-assert(os.path.isdir(output_dir))
+
+if not os.path.exists(output_dir):
+  os.makedirs(output_dir)
 
 num_channels = 3 if color == 'rgb' else 1
 
@@ -186,15 +196,38 @@ for dir in sorted(os.listdir(base1)):
 
         mask = cv2.imread('tmp/mask.png', 0)
         disp0[mask != 255] = 0
-        y, x = np.nonzero(mask == 255)[0:qty_patch]
+        y, x = np.nonzero(mask == 255)
+        
+        i = 0
+        count = 0
 
-        y = y[0:qty_patch]
-        x = x[0:qty_patch]
+        y_points = np.zeros(QTY_TRAIN, dtype=np.int)
+        x_points = np.zeros(QTY_TRAIN, dtype=np.int)
+
+        y_random = np.random.permutation(y)
+        x_random = np.random.permutation(x)
+
+        x1_img = np.squeeze(x1)
+
+        while count < QTY_TRAIN:
+          point_x = int(x_random[i])
+          point_y = int(y_random[i])
+
+          pair = x1_img[int(point_y)-CENTER_PATCH:int(point_y)+CENTER_PATCH+1, int(point_x)-CENTER_PATCH:int(point_x)+CENTER_PATCH+1]
+          pairVar = np.std(pair) 
+
+          if(pairVar <= 0.40): 
+            y_points[count] = point_y
+            x_points[count] = point_x
+
+            count = count + 1
+
+          i = i + 1
 
         print(np.array(XX).shape)
         #nnz = nnz_te if len(X) in te else nnz_tr
         nnz = nnz_tr
-        nnz.append(np.column_stack((np.zeros_like(y) + len(X), y, x, disp0[y, x])).astype(np.float32))
+        nnz.append(np.column_stack((np.zeros_like(y_points) + len(X), y_points, x_points, disp0[y_points, x_points])).astype(np.float32))
         dispnoc.append(disp0.astype(np.float32))
         meta.append((x0.shape[2], x0.shape[3], ndisp))        
 
