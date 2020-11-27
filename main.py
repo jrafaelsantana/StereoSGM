@@ -13,6 +13,8 @@ import os
 import cv2
 import datetime
 
+import lib.sgm_gpu.sgm_gpu as scratch_lib
+
 settings = config.Config()
 torch.manual_seed(int(settings.seed))
 
@@ -32,7 +34,7 @@ PENALTY_BIGGER_THEN_1 = float(settings.penalty_bigger_than_1)
 
 PFM_DIR = '/home/rafael/Desenvolvimento/MiddleburySDK/MiddEval3/trainingQ/'
 
-weight_path = 'weights/trainedweight25.pth'
+weight_path = 'weights/trainedweight3.pth'
 
 
 """
@@ -343,10 +345,14 @@ def sgm(directory):
     costs = compute_costs(left, right, max_disparity,
                           PATCH_HEIGHT, PATCH_WIDTH, CHANNEL_NUMBER, DEVICE)
 
-    aggregation = compute_aggregation(
-        costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
+    best_disp = scratch_lib.disp_calc(left, right, costs)
+    #cv2.imshow('disp_map', disp_map)
+    #cv2.waitKey(0)
 
-    best_disp = select_best_disparity(aggregation, max_disparity)
+    #aggregation = compute_aggregation(
+    #    costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
+
+    #best_disp = select_best_disparity(aggregation, max_disparity)
 
     best_disp = np.float32(best_disp)
     best_disp = cv2.medianBlur(best_disp, 5)
