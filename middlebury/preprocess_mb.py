@@ -103,7 +103,7 @@ def read_im(fname, downsample):
         x = x.transpose(2, 0, 1)
     else:
         x = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)[None]
-    x = (x - x.mean()) / x.std()
+    #x = (x - x.mean()) / x.std()
     return x[None]
 
 def tofile(fname, x):
@@ -149,12 +149,18 @@ for dir in sorted(os.listdir(base1)):
         x1 = read_im(os.path.join(base2_imperfect, 'im1.png'), True)
         x1E = read_im(os.path.join(base2_imperfect, 'im1E.png'), True)
         x1L = read_im(os.path.join(base2_imperfect, 'im1L.png'), True)
+
+        x0_norm = (x0 - x0.mean()) / x0.std()
+        x1_norm = (x1 - x1.mean()) / x1.std()
+        x1E_norm = (x1E - x1E.mean()) / x1E.std()
+        x1L_norm = (x1L - x1L.mean()) / x1L.std()
+
         XX = []
 
         imgs = []
-        imgs.append(np.concatenate((x0, x1)))
-        imgs.append(np.concatenate((x0, x1E)))
-        imgs.append(np.concatenate((x0, x1L)))
+        imgs.append(np.concatenate((x0_norm, x1_norm)))
+        imgs.append(np.concatenate((x0_norm, x1E_norm)))
+        imgs.append(np.concatenate((x0_norm, x1L_norm)))
         XX.append(np.array(imgs))
 
         base3 = os.path.join(base2_perfect if rectification == 'perfect' else base2_imperfect, 'ambient')
@@ -178,6 +184,7 @@ for dir in sorted(os.listdir(base1)):
             for exp in rng[num_exp]:
                 for cam in range(2):
                     im = read_im(base4 + '/im{}e{}.png'.format(cam, exp), True)
+                    im = (im - im.mean()) / im.std()
                     imgs.append(im)
             _, _, height, width = imgs[0].shape
             teste = np.concatenate(imgs).reshape(len(imgs) // 2, 2, num_channels, height, width)
@@ -192,7 +199,7 @@ for dir in sorted(os.listdir(base1)):
         save_pfm('tmp/disp1.pfm', disp1, 1)
         save_pfm('tmp/disp0y.pfm', disp0y, 1)
 
-        subprocess.check_output('computemask tmp/disp0.pfm tmp/disp0y.pfm tmp/disp1.pfm -1 tmp/mask.png'.split())
+        subprocess.check_output('./code/computemask tmp/disp0.pfm tmp/disp0y.pfm tmp/disp1.pfm -1 tmp/mask.png'.split())
 
         mask = cv2.imread('tmp/mask.png', 0)
         disp0[mask != 255] = 0
@@ -216,7 +223,7 @@ for dir in sorted(os.listdir(base1)):
           pair = x1_img[int(point_y)-CENTER_PATCH:int(point_y)+CENTER_PATCH+1, int(point_x)-CENTER_PATCH:int(point_x)+CENTER_PATCH+1]
           pairVar = np.std(pair) 
 
-          if(pairVar <= 0.40): 
+          if(pairVar <= 40): 
             y_points[count] = point_y
             x_points[count] = point_x
 

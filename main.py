@@ -4,6 +4,7 @@ import config
 import utils
 import evaluate
 import models
+import sys
 
 import numpy as np
 from numba import jit
@@ -12,11 +13,14 @@ import torch
 import os
 import cv2
 import datetime
+import gc
 
 import lib.sgm_gpu.sgm_gpu as scratch_lib
 
 settings = config.Config()
 torch.manual_seed(int(settings.seed))
+gc.collect()
+torch.cuda.empty_cache()
 
 USE_CUDA = int(settings.use_cuda)
 DEVICE = torch.device('cuda' if USE_CUDA else 'cpu')
@@ -32,8 +36,8 @@ CHANNEL_NUMBER = int(settings.channel_number)
 PENALTY_EQUAL_1 = float(settings.penalty_equal_1)
 PENALTY_BIGGER_THEN_1 = float(settings.penalty_bigger_than_1)
 
-pi1 = 1
-pi2 = 2
+#pi1 = 1
+#pi2 = 2
 tau_so = 0.08
 alpha1 = 1.5
 sgm_q1 = 2
@@ -42,7 +46,8 @@ direction = 1
 
 PFM_DIR = '/home/rafael/Desenvolvimento/MiddleburySDK/MiddEval3/trainingQ/'
 
-weight_path = 'weights/trainedweight3.pth'
+epoch_file = 7
+weight_path = 'weights/trainedweight{}.pth'.format(epoch_file)
 
 
 """
@@ -61,6 +66,7 @@ if os.path.exists(weight_path):
     net.load_state_dict(torch.load(weight_path))
 else:
     print('Weights not found')
+    sys.exit()
 
 
 def compute_costs(left, right, max_disparity, patch_height, patch_width, channel_number, device):
@@ -350,17 +356,13 @@ def sgm(directory):
     left = (left - left.mean()) / left.std()
     right = (right - right.mean()) / right.std()
 
-    costs = compute_costs(left, right, max_disparity,
-                          PATCH_HEIGHT, PATCH_WIDTH, CHANNEL_NUMBER, DEVICE)
+    costs = compute_costs(left, right, max_disparity, PATCH_HEIGHT, PATCH_WIDTH, CHANNEL_NUMBER, DEVICE)
 
-    best_disp = scratch_lib.disp_calc(left, right, costs, pi1, pi2, tau_so, alpha1, sgm_q1, sgm_q2, direction)
-    #cv2.imshow('disp_map', disp_map)
-    #cv2.waitKey(0)
-
-    #aggregation = compute_aggregation(
-    #    costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
-
-    #best_disp = select_best_disparity(aggregation, max_disparity)
+    if USE_CUDA:
+        best_disp = scratch_lib.disp_calc(left, right, costs, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1, tau_so, alpha1, sgm_q1, sgm_q2, direction)
+    else:
+        aggregation = compute_aggregation(costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
+        best_disp = select_best_disparity(aggregation, max_disparity)
 
     best_disp = np.float32(best_disp)
     best_disp = cv2.medianBlur(best_disp, 5)
@@ -369,11 +371,11 @@ def sgm(directory):
 
     pfm = best_disp.astype(np.float32)
     #utils.write_pfm(PFM_DIR + directory.name + '/disp0MULTIJANELA19HALF.pfm', pfm)
-    utils.write_pfm('resultados/{}_disp0MULTIJANELA25HALF.pfm'.format(directory.name), pfm)
+    utils.write_pfm('resultados/{}_{}_{}_{}.pfm'.format(directory.name, epoch_file, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1), pfm)
 
     #best_disp *= 255.0/best_disp.max() 
     
-    utils.saveDisparity(np.uint8(best_disp), 'resultados/' + directory.name + '_7.png')
+    utils.saveDisparity(np.uint8(best_disp), 'resultados/{}_{}_{}_{}.png'.format(directory.name, epoch_file, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1))
 
     # print("Evaluate")
     # recall = evaluate.recall(best_disp, gt_file, max_disparity)
