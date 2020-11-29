@@ -223,7 +223,7 @@ for dir in sorted(os.listdir(base1)):
           pair = x1_img[int(point_y)-CENTER_PATCH:int(point_y)+CENTER_PATCH+1, int(point_x)-CENTER_PATCH:int(point_x)+CENTER_PATCH+1]
           pairVar = np.std(pair) 
 
-          if(pairVar <= 40): 
+          if(pairVar > 40): 
             y_points[count] = point_y
             x_points[count] = point_x
 
