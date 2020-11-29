@@ -46,7 +46,7 @@ direction = 1
 
 PFM_DIR = '/home/rafael/Desenvolvimento/MiddleburySDK/MiddEval3/trainingQ/'
 
-epoch_file = 7
+epoch_file = 4
 weight_path = 'weights/trainedweight{}.pth'.format(epoch_file)
 
 
@@ -357,6 +357,7 @@ def sgm(directory):
     right = (right - right.mean()) / right.std()
 
     costs = compute_costs(left, right, max_disparity, PATCH_HEIGHT, PATCH_WIDTH, CHANNEL_NUMBER, DEVICE)
+    torch.cuda.empty_cache()
 
     if USE_CUDA:
         best_disp = scratch_lib.disp_calc(left, right, costs, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1, tau_so, alpha1, sgm_q1, sgm_q2, direction)
