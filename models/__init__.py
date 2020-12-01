@@ -1,1 +1,2 @@
 from .siamese import Siamese, weights_init_uniform_rule
+from .siamese_one_window import SiameseOneWindow, weights_init_uniform_rule_one_window

@@ -13,6 +13,9 @@ class Config:
 
         self.patch_height = os.getenv('PATCH_HEIGHT')
         self.patch_width = os.getenv('PATCH_WIDTH')
+        self.patch_small_height = os.getenv('PATCH_SMALL_HEIGHT')
+        self.patch_small_width = os.getenv('PATCH_SMALL_WIDTH')
+        self.use_one_window_net = os.getenv('USE_ONE_WINDOW_NET')
         self.height_stride = os.getenv('HEIGHT_STRIDE')
         self.width_stride = os.getenv('WIDTH_STRIDE')
         self.channel_number = os.getenv('CHANNEL_NUMBER')

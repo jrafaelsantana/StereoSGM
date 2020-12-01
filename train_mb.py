@@ -21,6 +21,9 @@ USE_CUDA = int(settings.use_cuda)
 DEVICE = torch.device('cuda' if USE_CUDA else 'cpu')
 PATCH_WIDTH = int(settings.patch_width)
 PATCH_HEIGHT = int(settings.patch_height)
+PATCH_SMALL_WIDTH = int(settings.patch_small_width)
+PATCH_SMALL_HEIGHT = int(settings.patch_small_height)
+USE_ONE_WINDOW_NET = int(settings.use_one_window_net)
 DH = int(settings.height_stride)
 DW = int(settings.width_stride)
 CENTER_PATCH_WIDTH = int(PATCH_WIDTH/2)
@@ -50,24 +53,31 @@ D_BRIGHTNESS = float(settings.D_BRIGHTNESS)
 D_EXP = float(settings.D_EXP)
 D_LIGHT = float(settings.D_LIGHT)
 
-if not os.path.exists('weights/'):
-    os.mkdir('weights/')
+if USE_ONE_WINDOW_NET:
+    weight_path = 'weights-one/'
+else:
+    weight_path = 'weights/'
+    
+if not os.path.exists(weight_path):
+    os.mkdir(weight_path)
 
-weight_path = 'weights/trainedweight.pth'
 
-def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_high=6.0, dataset_pos=0.5, patch_height=11, patch_width=11, channel_number=1):
-    net = models.Siamese(channel_number).to(device)
+def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_high=6.0, dataset_pos=0.5, patch_height=11, patch_width=11, channel_number=1, one_window_net=False):
+    if one_window_net:
+        net = models.SiameseOneWindow(channel_number).to(device)
+    else:
+        net = models.Siamese(channel_number).to(device)
 
     #criterion = torch.nn.MarginRankingLoss(0.5).to(device)
     criterion = torch.nn.BCELoss().to(device)
 
-    if(weight_path != None and os.path.exists(weight_path)):
-        net.load_state_dict(torch.load(weight_path))
+    if one_window_net:
+        net.apply(models.weights_init_uniform_rule_one_window)
     else:
         net.apply(models.weights_init_uniform_rule)
         
     #optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, eps=1e-08, weight_decay=0.0000005)
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
 
     #X, te, metadata, nnz_tr, nnz_te = middlebury.load('imperfect', 'gray', device)
     X, metadata, nnz_tr = middlebury.load('imperfect', 'gray')
@@ -173,11 +183,20 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
             err_tr += loss.item()
             err_tr_cnt += 1
 
-        torch.save(net.state_dict(), 'weights/trainedweight{}.pth'.format(epoch))
+        torch.save(net.state_dict(), '{}trainedweight{}.pth'.format(weight_path, epoch))
         print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' % (epoch, (err_tr/err_tr_cnt), time.time() - time_start))
 
 if __name__ == "__main__":
     print("Training CNN...")
+
+    if USE_ONE_WINDOW_NET:
+        p_height = PATCH_SMALL_HEIGHT
+        p_width = PATCH_SMALL_WIDTH
+        one_window_net = True
+    else :
+        p_height = PATCH_HEIGHT
+        p_width = PATCH_WIDTH
+        one_window_net = False
 
     train(
         batch_size = BATCH_SIZE,
@@ -186,7 +205,8 @@ if __name__ == "__main__":
         dataset_neg_low = 1.5,
         dataset_neg_high = 18,
         dataset_pos = 0.5,
-        patch_height = PATCH_HEIGHT,
-        patch_width = PATCH_WIDTH,
-        channel_number = CHANNEL_NUMBER
+        patch_height = p_height,
+        patch_width = p_width,
+        channel_number = CHANNEL_NUMBER,
+        one_window_net = one_window_net
     )
