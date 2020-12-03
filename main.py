@@ -41,15 +41,16 @@ PENALTY_BIGGER_THEN_1 = float(settings.penalty_bigger_than_1)
 
 #pi1 = 1
 #pi2 = 2
-tau_so = 0.10
-alpha1 = 1.75
-sgm_q1 = 1.5
-sgm_q2 = 4.5
+tau_so = 0.08
+alpha1 = 2.75
+sgm_q1 = 4.5
+sgm_q2 = 2
 direction = 1
 
 PFM_DIR = '/home/rafael/Desenvolvimento/MiddleburySDK/MiddEval3/trainingQ/'
 
-epoch_file = 0
+epoch_file = sys.argv[1]
+print('Epoch: {}'.format(epoch_file))
 
 if USE_ONE_WINDOW_NET:
     weight_path = 'weights-one/trainedweight{}.pth'.format(epoch_file)
@@ -190,7 +191,7 @@ def calc_costs(out1, out2, out1_small, out2_small):
     return costs
 '''
 def calc_costs(out1, out2, out1_small, out2_small, max_disparity, one_window_net):
-    features, height, width = out1.shape
+    features, height, width = out1_small.shape
     costs = torch.zeros((height, width, max_disparity), dtype=torch.float32).to(DEVICE)
 
     if one_window_net:
@@ -402,5 +403,5 @@ if __name__ == "__main__":
     # input()
 
     for directory in subdirectories:
-        if directory.name == 'Adirondack':  # For tests only
+        if directory.name == sys.argv[2]:  # For tests only
             sgm(directory)
