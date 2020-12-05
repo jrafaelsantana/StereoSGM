@@ -36,8 +36,11 @@ CENTER_PATCH_HEIGHT = int(PATCH_HEIGHT/2)
 QTY_CORRECT_TRAIN = int(settings.train_correct)
 QTY_INCORRECT_TRAIN = int(settings.train_incorrect)
 CHANNEL_NUMBER = int(settings.channel_number)
-PENALTY_EQUAL_1 = float(settings.penalty_equal_1)
-PENALTY_BIGGER_THEN_1 = float(settings.penalty_bigger_than_1)
+#PENALTY_EQUAL_1 = float(settings.penalty_equal_1)
+#PENALTY_BIGGER_THEN_1 = float(settings.penalty_bigger_than_1)
+PENALTY_EQUAL_1 = float(sys.argv[3])
+PENALTY_BIGGER_THEN_1 = float(sys.argv[4])
+
 
 #pi1 = 1
 #pi2 = 2
@@ -50,7 +53,7 @@ direction = 1
 PFM_DIR = '/home/rafael/Desenvolvimento/MiddleburySDK/MiddEval3/trainingQ/'
 
 epoch_file = sys.argv[1]
-print('Epoch: {}'.format(epoch_file))
+print('{} {} {} {}'.format(sys.argv[2], epoch_file, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1))
 
 if USE_ONE_WINDOW_NET:
     weight_path = 'weights-one/trainedweight{}.pth'.format(epoch_file)
@@ -362,7 +365,9 @@ def sgm(directory):
     torch.cuda.empty_cache()
 
     if USE_CUDA:
-        best_disp = scratch_lib.disp_calc(left, right, costs, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1, tau_so, alpha1, sgm_q1, sgm_q2, direction)
+        #best_disp = scratch_lib.disp_calc(left, right, costs, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1, tau_so, alpha1, sgm_q1, sgm_q2, direction)
+        aggregation = compute_aggregation(costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
+        best_disp = select_best_disparity(aggregation, max_disparity)
     else:
         aggregation = compute_aggregation(costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
         best_disp = select_best_disparity(aggregation, max_disparity)

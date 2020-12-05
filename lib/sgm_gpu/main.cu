@@ -100,16 +100,16 @@ __global__ void sgm2(float *x0, float *x1, float *input, float *output, float *t
 	}
 
 	int ind2 = y * size2 + x;
-	float D1 = COLOR_DIFF(x0, ind2, ind2 - dy * size2 - dx);
+	/*float D1 = COLOR_DIFF(x0, ind2, ind2 - dy * size2 - dx);
 	float D2;
 	int xx = x + d * direction;
 	if (xx < 0 || xx >= size2 || xx - dx < 0 || xx - dx >= size2) {
 		D2 = 10;
 	} else {
 		D2 = COLOR_DIFF(x1, ind2 + d * direction, ind2 + d * direction - dy * size2 - dx);
-	}
+	}*/
 	float P1, P2;
-	if (D1 < tau_so && D2 < tau_so) {
+	/*if (D1 < tau_so && D2 < tau_so) {
 		P1 = pi1;
 		P2 = pi2;
 	} else if (D1 > tau_so && D2 > tau_so) {
@@ -118,15 +118,21 @@ __global__ void sgm2(float *x0, float *x1, float *input, float *output, float *t
 	} else {
 		P1 = pi1 / sgm_q1;
 		P2 = pi2 / sgm_q1;
-	}
+	}*/
+
+	P1 = pi1;
+	P2 = pi2;
 
 	float cost = min(output_s[d], output_min[0] + P2);
 	if (d - 1 >= 0) {
-		cost = min(cost, output_s[d - 1] + (sgm_direction == 2 ? P1 / alpha1 : P1));
+		//cost = min(cost, output_s[d - 1] + (sgm_direction == 2 ? P1 / alpha1 : P1));
+		cost = min(cost, output_s[d - 1] + P1);
 	}
 	if (d + 1 < size3) {
-		cost = min(cost, output_s[d + 1] + (sgm_direction == 3 ? P1 / alpha1 : P1));
+		//cost = min(cost, output_s[d + 1] + (sgm_direction == 3 ? P1 / alpha1 : P1));
+		cost = min(cost, output_s[d + 1] + P1);
 	}
+
 
 	float val = input[INDEX(0, y, x, d)] + cost - output_min[0];
 	output[INDEX(0, y, x, d)] += val;
@@ -369,3 +375,4 @@ BOOST_PYTHON_MODULE(sgm_gpu)
   //py::def("process_mat", &process_mat);
   //py::def("ConvertNDArrayToMat", ConvertNDArrayToMat, "ConvertNDArrayToMat");
 }
+
