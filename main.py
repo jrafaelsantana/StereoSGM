@@ -349,8 +349,8 @@ def sgm(directory):
         left = cv2.imread(directory._str + '/im0.png', 0)
         right = cv2.imread(directory._str + '/im1.png', 0)
 
-    left = (left - left.mean()) / left.std()
-    right = (right - right.mean()) / right.std()
+    left_tmp = (left - left.mean()) / left.std()
+    right_tmp = (right - right.mean()) / right.std()
 
     if USE_ONE_WINDOW_NET:
         p_height = PATCH_SMALL_HEIGHT
@@ -361,13 +361,12 @@ def sgm(directory):
         p_width = PATCH_WIDTH
         one_window_net = False
 
-    costs = compute_costs(left, right, max_disparity, p_height, p_width, CHANNEL_NUMBER, DEVICE, one_window_net)
+    costs = compute_costs(left_tmp, right_tmp, max_disparity, p_height, p_width, CHANNEL_NUMBER, DEVICE, one_window_net)
     torch.cuda.empty_cache()
+    costs = scratch_lib.cbca(left, right, costs, L1, tau1, direction)   
 
     if USE_CUDA:
-        #best_disp = scratch_lib.disp_calc(left, right, costs, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1, tau_so, alpha1, sgm_q1, sgm_q2, direction)
-        aggregation = compute_aggregation(costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
-        best_disp = select_best_disparity(aggregation, max_disparity)
+        best_disp = scratch_lib.disp_calc(left, right, costs, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1, tau_so, alpha1, sgm_q1, sgm_q2, direction)
     else:
         aggregation = compute_aggregation(costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
         best_disp = select_best_disparity(aggregation, max_disparity)

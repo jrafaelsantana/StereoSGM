@@ -16,6 +16,8 @@ cv::Mat disparity_im;
 cv::Mat disparity_im_lr;
 cv::Mat disparity_im_result;
 
+#define TB 128
+
 #define COLOR_DIFF(x, i, j) (abs(x[i] - x[j]))
 
 #define INDEX(dim0, dim1, dim2, dim3) \
@@ -100,16 +102,16 @@ __global__ void sgm2(float *x0, float *x1, float *input, float *output, float *t
 	}
 
 	int ind2 = y * size2 + x;
-	/*float D1 = COLOR_DIFF(x0, ind2, ind2 - dy * size2 - dx);
+	float D1 = COLOR_DIFF(x0, ind2, ind2 - dy * size2 - dx);
 	float D2;
 	int xx = x + d * direction;
 	if (xx < 0 || xx >= size2 || xx - dx < 0 || xx - dx >= size2) {
 		D2 = 10;
 	} else {
 		D2 = COLOR_DIFF(x1, ind2 + d * direction, ind2 + d * direction - dy * size2 - dx);
-	}*/
+	}
 	float P1, P2;
-	/*if (D1 < tau_so && D2 < tau_so) {
+	if (D1 < tau_so && D2 < tau_so) {
 		P1 = pi1;
 		P2 = pi2;
 	} else if (D1 > tau_so && D2 > tau_so) {
@@ -118,26 +120,236 @@ __global__ void sgm2(float *x0, float *x1, float *input, float *output, float *t
 	} else {
 		P1 = pi1 / sgm_q1;
 		P2 = pi2 / sgm_q1;
-	}*/
-
-	P1 = pi1;
-	P2 = pi2;
+	}
 
 	float cost = min(output_s[d], output_min[0] + P2);
 	if (d - 1 >= 0) {
-		//cost = min(cost, output_s[d - 1] + (sgm_direction == 2 ? P1 / alpha1 : P1));
-		cost = min(cost, output_s[d - 1] + P1);
+		cost = min(cost, output_s[d - 1] + (sgm_direction == 2 ? P1 / alpha1 : P1));
 	}
 	if (d + 1 < size3) {
-		//cost = min(cost, output_s[d + 1] + (sgm_direction == 3 ? P1 / alpha1 : P1));
-		cost = min(cost, output_s[d + 1] + P1);
+		cost = min(cost, output_s[d + 1] + (sgm_direction == 3 ? P1 / alpha1 : P1));
 	}
-
 
 	float val = input[INDEX(0, y, x, d)] + cost - output_min[0];
 	output[INDEX(0, y, x, d)] += val;
 	tmp[d * size2 + blockIdx.x] = val;
 }
+
+__global__ void cross(float *x0, float *out, int size, int dim2, int dim3, int L1, float tau1)
+{
+	int id = blockIdx.x * blockDim.x + threadIdx.x;
+	if (id < size) {
+		int dir = id;
+		int x = dir % dim3;
+		dir /= dim3;
+		int y = dir % dim2;
+		dir /= dim2;
+
+		int dx = 0;
+		int dy = 0;
+		if (dir == 0) {
+			dx = -1;
+		} else if (dir == 1) {
+			dx = 1;
+		} else if (dir == 2) {
+			dy = -1;
+		} else if (dir == 3) {
+			dy = 1;
+		} else {
+			assert(0);
+		}
+
+		int xx, yy, ind1, ind2, dist;
+		ind1 = y * dim3 + x;
+		for (xx = x + dx, yy = y + dy;;xx += dx, yy += dy) {
+			if (xx < 0 || xx >= dim3 || yy < 0 || yy >= dim2) break;
+
+			dist = max(abs(xx - x), abs(yy - y));
+			if (dist == 1) continue;
+
+			ind2 = yy * dim3 + xx;
+
+			/* rule 1 */
+			if (COLOR_DIFF(x0, ind1, ind2) >= tau1) break;
+
+			/* rule 2 */
+			if (dist >= L1) break;
+		}
+		out[id] = dir <= 1 ? xx : yy;
+	}
+}
+
+__global__ void cbca(float *x0c, float *x1c, float *vol, float *out, int size, int dim2, int dim3, int direction)
+{
+	int id = blockIdx.x * blockDim.x + threadIdx.x;
+	if (id < size) {
+		int d = id;
+		int x = d % dim3;
+		d /= dim3;
+		int y = d % dim2;
+		d /= dim2;
+
+		if (x + d * direction < 0 || x + d * direction >= dim3) {
+			out[id] = vol[id];
+		} else {
+			float sum = 0;
+			int cnt = 0;
+
+			int yy_s = max(x0c[(2 * dim2 + y) * dim3 + x], x1c[(2 * dim2 + y) * dim3 + x + d * direction]);
+			int yy_t = min(x0c[(3 * dim2 + y) * dim3 + x], x1c[(3 * dim2 + y) * dim3 + x + d * direction]);
+			for (int yy = yy_s + 1; yy < yy_t; yy++) {
+				int xx_s = max(x0c[(0 * dim2 + yy) * dim3 + x], x1c[(0 * dim2 + yy) * dim3 + x + d * direction] - d * direction);
+				int xx_t = min(x0c[(1 * dim2 + yy) * dim3 + x], x1c[(1 * dim2 + yy) * dim3 + x + d * direction] - d * direction);
+				for (int xx = xx_s + 1; xx < xx_t; xx++) {
+					float val = vol[(d * dim2 + yy) * dim3 + xx];
+					assert(!isnan(val));
+					sum += val;
+					cnt++;
+				}
+			}
+
+			assert(cnt > 0);
+			out[id] = sum / cnt;
+			assert(!isnan(out[id]));
+		}
+	}
+}
+
+np::ndarray cb_ca(np::ndarray& img1_nd, np::ndarray& img2_nd, np::ndarray& vol_in_nd, int L1, float tau1, int direction)
+{
+    Mat left = cv::Mat(cv::Size(img1_nd.get_shape()[1], img1_nd.get_shape()[0]), CV_32FC1, img1_nd.get_data()); 
+    Mat right = cv::Mat(cv::Size(img2_nd.get_shape()[1], img2_nd.get_shape()[0]), CV_32FC1, img2_nd.get_data()); 
+
+
+    int size[3] = {vol_in_nd.get_shape()[0] , vol_in_nd.get_shape()[1] , vol_in_nd.get_shape()[2]  };
+
+    Mat vol_in = cv::Mat(3, size, CV_32FC1, vol_in_nd.get_data()); 
+
+    float *vol_in_cu; 
+	float *vol_out_cu;
+	float *tmp;
+
+	static Mat vol_out = cv::Mat::zeros(3, size, CV_32FC1); 
+
+    
+
+    //tmp_cbca = torch.CudaTensor(1, disp_max, vol:size(3), vol:size(4))
+
+
+    float *x0 = (float *)left.data;
+	float *x1 = (float *)right.data; 
+
+	float *x0_cu; 
+	float *x1_cu; 
+	float *x0c;
+	float *x1c;
+
+
+
+
+	int vol_numberElement = vol_in.size[0]*vol_in.size[1]*vol_in.size[2];
+	int x0C_numberElement = left.size[0]*left.size[1]*4;
+
+	cudaMalloc(&x0_cu, (left.size[0]*left.size[1])*sizeof(float));
+	cudaMalloc(&x1_cu, (right.size[0]*right.size[1])*sizeof(float));
+	cudaMalloc(&x0c, (left.size[0]*left.size[1]*4)*sizeof(float));
+  	cudaMalloc(&x1c, (right.size[0]*right.size[1]*4)*sizeof(float));
+  	cudaMalloc(&vol_in_cu, (vol_in.size[0]*vol_in.size[1]*vol_in.size[2])*sizeof(float));       
+    cudaMalloc(&vol_out_cu, (vol_in.size[0]*vol_in.size[1]*vol_in.size[2])*sizeof(float));	
+
+
+
+  	cudaMemcpy(vol_in_cu, (float *)vol_in.data, (vol_in.size[0]*vol_in.size[1]*vol_in.size[2])*sizeof(float), cudaMemcpyHostToDevice); 
+    cudaMemcpy(x0_cu, x0, (left.size[0]*left.size[1])*sizeof(float), cudaMemcpyHostToDevice);
+  	cudaMemcpy(x1_cu, x1, (right.size[0]*right.size[1])*sizeof(float), cudaMemcpyHostToDevice);
+
+  	/*for(int i = 2; i < 5; i++){
+  		for(int j = 10; j < 20; j++){
+  			for(int k = 2; k < 10; k++){
+  				printf("%f \n", vol_in.at<float>(i,j,k));
+  			}
+  		}
+  	}*/
+
+  	//printf("depois\n");
+
+  	/*cudaMemset(x0c, 0, (left.size[0]*left.size[1]*4)*sizeof(float));
+  	cudaMemset(x1c, 0, (left.size[0]*left.size[1]*4)*sizeof(float));
+  	cudaMemset(vol_out_cu, 0, (left.size[0]*left.size[1]*left.size[2])*sizeof(float));*/
+
+  	cross<<< (x0C_numberElement - 1) / TB + 1, TB>>>(
+			x0_cu,
+			x0c,			
+			x0C_numberElement,
+			left.rows,
+			left.cols, L1, tau1);
+
+  	cross<<< (x0C_numberElement - 1) / TB + 1, TB>>>(
+			x1_cu,
+			x1c,			
+			x0C_numberElement,
+			left.rows,
+			left.cols, L1, tau1);
+
+
+  	//for(int i = 0; i < 2; i++){
+		cbca<<<(vol_numberElement - 1) / TB + 1, TB>>>(
+			x0c,
+			x1c,
+			vol_in_cu,
+			vol_out_cu,
+			vol_numberElement,
+			left.rows,
+			left.cols,
+			direction);
+
+			tmp = vol_in_cu;
+			vol_in_cu = vol_out_cu;
+			vol_out_cu = tmp;
+
+			//cudaMemset(vol_out_cu, 0, (left.size[0]*left.size[1]*left.size[2])*sizeof(float));
+
+	//}
+
+	cudaMemcpy((float *)vol_out.data, vol_out_cu, (vol_in.size[0]*vol_in.size[1]*vol_in.size[2])*sizeof(float), cudaMemcpyDeviceToHost);
+
+	/*cout << vol_out.size[0] << endl;
+	cout << vol_out.size[1] << endl;
+	cout << vol_out.size[2] << endl;*/
+
+	cudaFree(x0_cu);
+  	cudaFree(x1_cu);
+  	cudaFree(vol_in_cu);
+  	cudaFree(vol_out_cu);
+  	cudaFree(x0c);
+  	cudaFree(x1c);
+  	//cudaFree(tmp_pt_cu);
+
+  	/*for(int i = 2; i < 5; i++){
+  		for(int j = 10; j < 20; j++){
+  			for(int k = 2; k < 10; k++){
+  				printf("%f \n", vol_out.at<float>(i,j,k));
+  				//vol_out.at<float>(i,j,k) = 100;
+  			}
+  		}
+  	}*/
+
+
+
+	//py::tuple shape = py::make_tuple(vol_out.rows, vol_out.cols, vol_out.channels());
+	py::tuple shape = py::make_tuple(vol_out.size[0], vol_out.size[1], vol_out.size[2]);
+    py::tuple stride = py::make_tuple(vol_out.size[2] * vol_out.size[1] * sizeof(float), vol_out.size[2] * sizeof(float), sizeof(float));
+    np::dtype dt = np::dtype::get_builtin<float>();
+    np::ndarray ndImg = np::from_data((float *)vol_out.data, dt, shape, stride, py::object());
+
+    
+
+    return ndImg;
+}
+
+
+
+
 
 int sgm2(cv::Mat left, cv::Mat right, cv::Mat cost, cv::Mat &output, float pi1, float pi2, float tau_so, float alpha1, float sgm_q1, float sgm_q2, int direction)
 {
@@ -240,81 +452,28 @@ int sgm2(cv::Mat left, cv::Mat right, cv::Mat cost, cv::Mat &output, float pi1, 
 	return 0;
 }
 
+
+
 np::ndarray dispCalc(np::ndarray& img1_nd, np::ndarray& img2_nd, np::ndarray& costs_nd, float pi1, float pi2, float tau_so, float alpha1, float sgm_q1, float sgm_q2, int direction)
 {
-    //int a = 10;
-    //Mat imgL = cv::Mat(cv::Size(img1_nd.get_shape()[1], img1_nd.get_shape()[0], img1_nd.get_shape()[2]), CV_32FC1, img1_nd.get_data()); 
-
     Mat imgL = cv::Mat(cv::Size(img1_nd.get_shape()[1], img1_nd.get_shape()[0]), CV_32FC1, img1_nd.get_data()); 
-    Mat imgR = cv::Mat(cv::Size(img2_nd.get_shape()[1], img2_nd.get_shape()[0]), CV_32FC1, img2_nd.get_data()); 
-
-	/*cout << img1_nd.get_shape()[0] << endl;
-	cout << img1_nd.get_shape()[1] << endl;
-	cout << img1_nd.get_shape()[2] << endl;*/
+    Mat imgR = cv::Mat(cv::Size(img2_nd.get_shape()[1], img2_nd.get_shape()[0]), CV_32FC1, img2_nd.get_data()); 	
 
 	int size[3] = {costs_nd.get_shape()[0] , costs_nd.get_shape()[1] , costs_nd.get_shape()[2]  };
 
     Mat costs = cv::Mat(3, size, CV_32FC1, costs_nd.get_data()); 
 
-    //int size[3] = {costs_nd.get_shape()[0] , costs_nd.get_shape()[1] , costs_nd.get_shape()[2]  };
-
     Mat output = cv::Mat::zeros(3, size, CV_32FC1); 
-    //Mat tmp = cv::Mat::zeros(cv::Size(img1_nd.get_shape()[1], img1_nd.get_shape()[0]), CV_32FC1); 
+    
+    Mat mapa = cv::Mat::zeros(cv::Size(img1_nd.get_shape()[1], img1_nd.get_shape()[0]), CV_8UC1);     
 
 
 
-
-    Mat mapa = cv::Mat::zeros(cv::Size(img1_nd.get_shape()[1], img1_nd.get_shape()[0]), CV_8UC1); 
-
-    //imshow("disp1",mapa);
-    //waitKey(0);
-
-    //Mat imgR = cv::Mat(cv::Size(img2_nd.get_shape()[1], img2_nd.get_shape()[0]), CV_8UC1, img2_nd.get_data()); 
-    //Mat imgL = imread("imgL.png",0);
-    //Mat imgR = imread("imgR.png",0);
-
-    //cout << "OLA" << endl;
-    //getchar();
-
-    //float elapsed_time_ms;
-    /*if(init_disp == 0){
-        init_disparity_method(20, 60);
-        init_disp = 1;
-    }*/
-    //double t = (double)getTickCount();
-
-
-    /*for(int row = 0; row < 20; row++){
-    	for(int col = 0; col < 20; col++){
-    		
-    		for(int disp = 0; disp < 20; disp++){
-    			cout << row << " " << col << " " << output.at<float>(row,col,disp) << endl;
-    			
-    		}
-
-    	}
-    }*/
-
-    // << "antes" << endl;
-    //getchar();
+    //cross
+    
+    //cbca
 
     sgm2(imgL, imgR, costs, output, pi1, pi2, tau_so,  alpha1, sgm_q1, sgm_q2, direction);
-
-
-    /*for(int row = 0; row < 25; row++){
-    	for(int col = 0; col < 25; col++){
-    		
-    		for(int disp = 0; disp < 40; disp++){
-    			cout << row << " " << col << " " << disp <<  " " << output.at<float>(row,col,disp) << endl;
-    			//getchar();
-    			
-    		}
-
-    	}
-    }*/
-
-    //cout << "depois" << endl;
-    //getchar();
 
 
     for(int row = 0; row < costs_nd.get_shape()[0]; row++){
@@ -322,8 +481,9 @@ np::ndarray dispCalc(np::ndarray& img1_nd, np::ndarray& img2_nd, np::ndarray& co
     		int disp_f = 0;
     		float value_f = 100000;
     		for(int disp = 0; disp < costs_nd.get_shape()[2]; disp++){
-    			if(output.at<float>(row,col,disp) < value_f){
-    				value_f = output.at<float>(row,col,disp);
+    			float tmp = output.at<float>(row,col,disp)/4.0;
+    			if(tmp < value_f){
+    				value_f = tmp;
     				disp_f = disp;
     			}
     		}
@@ -363,16 +523,25 @@ np::ndarray dispCalc(np::ndarray& img1_nd, np::ndarray& img2_nd, np::ndarray& co
     return ndImg;
 }
 
+
+
+
+
+
+
+
+
 BOOST_PYTHON_MODULE(sgm_gpu)
 { 
   Py_Initialize();
   np::initialize(); 
   //py::def("greet", greet, "Prepends a greeting to the passed name");
   //py::def("fat", fact, "funcao de fat");
+
   py::def("disp_calc", dispCalc, "disp_calc"); 
+  py::def("cbca", cb_ca, "cbca"); 
   //py::def("init_disp", initDisp, "init_disp"); 
   //py::def("road_profile", road_profile, "road profile");
   //py::def("process_mat", &process_mat);
   //py::def("ConvertNDArrayToMat", ConvertNDArrayToMat, "ConvertNDArrayToMat");
 }
-
