@@ -44,10 +44,12 @@ PENALTY_BIGGER_THEN_1 = float(sys.argv[4])
 
 #pi1 = 1
 #pi2 = 2
-tau_so = 0.08
+tau_so = 0.13
 alpha1 = 2.75
 sgm_q1 = 4.5
-sgm_q2 = 2
+sgm_q2 = 9
+L1 = 10
+tau1 = 0.13
 direction = 1
 
 PFM_DIR = '/home/rafael/Desenvolvimento/MiddleburySDK/MiddEval3/trainingQ/'
