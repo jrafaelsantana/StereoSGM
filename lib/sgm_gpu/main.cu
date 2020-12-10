@@ -303,9 +303,9 @@ np::ndarray cb_ca(np::ndarray& img1_nd, np::ndarray& img2_nd, np::ndarray& vol_i
 			left.cols,
 			direction);
 
-			tmp = vol_in_cu;
-			vol_in_cu = vol_out_cu;
-			vol_out_cu = tmp;
+			//tmp = vol_in_cu;
+			//vol_in_cu = vol_out_cu;
+			//vol_out_cu = tmp;
 
 			//cudaMemset(vol_out_cu, 0, (left.size[0]*left.size[1]*left.size[2])*sizeof(float));
 
