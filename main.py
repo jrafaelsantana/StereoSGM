@@ -44,10 +44,10 @@ PENALTY_BIGGER_THEN_1 = float(sys.argv[4])
 
 #pi1 = 1
 #pi2 = 2
-tau_so = 0.13
-alpha1 = 2.75
-sgm_q1 = 4.5
-sgm_q2 = 9
+tau_so = 0.08
+alpha1 = 1.75
+sgm_q1 = 2.5
+sgm_q2 = 1
 L1 = 10
 tau1 = 0.13
 direction = 1
@@ -365,7 +365,7 @@ def sgm(directory):
 
     costs = compute_costs(left_tmp, right_tmp, max_disparity, p_height, p_width, CHANNEL_NUMBER, DEVICE, one_window_net)
     torch.cuda.empty_cache()
-    costs = scratch_lib.cbca(left, right, costs, L1, tau1, direction)   
+    #costs = scratch_lib.cbca(left, right, costs, L1, tau1, direction)   
 
     if USE_CUDA:
         best_disp = scratch_lib.disp_calc(left, right, costs, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1, tau_so, alpha1, sgm_q1, sgm_q2, direction)

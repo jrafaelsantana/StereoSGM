@@ -13,6 +13,10 @@ import cv2
 from dotenv import load_dotenv
 from pathlib import Path
 
+from random import seed, random
+
+seed(1)
+
 load_dotenv(dotenv_path=Path('..') / '.env')
 
 PATCH_WIDTH = int(os.getenv('PATCH_WIDTH'))
@@ -223,7 +227,7 @@ for dir in sorted(os.listdir(base1)):
           pair = x1_img[int(point_y)-CENTER_PATCH:int(point_y)+CENTER_PATCH+1, int(point_x)-CENTER_PATCH:int(point_x)+CENTER_PATCH+1]
           pairVar = np.std(pair) 
 
-          if(pairVar > 40): 
+          if(pairVar > 30) or random() > 0.70: 
             y_points[count] = point_y
             x_points[count] = point_x
 
