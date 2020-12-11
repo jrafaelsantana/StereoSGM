@@ -368,7 +368,7 @@ def sgm(directory):
     #costs = scratch_lib.cbca(left, right, costs, L1, tau1, direction)   
 
     if USE_CUDA:
-        best_disp = scratch_lib.disp_calc(left, right, costs, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1, tau_so, alpha1, sgm_q1, sgm_q2, direction)
+        best_disp = scratch_lib.disp_calc(left_tmp, right_tmp, costs, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1, tau_so, alpha1, sgm_q1, sgm_q2, direction)
     else:
         aggregation = compute_aggregation(costs, paths, PENALTY_EQUAL_1, PENALTY_BIGGER_THEN_1)
         best_disp = select_best_disparity(aggregation, max_disparity)
