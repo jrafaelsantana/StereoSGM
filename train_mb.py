@@ -1,17 +1,19 @@
-import random
-
+from drawnow import drawnow
+import matplotlib.pyplot as plt
 import torch.multiprocessing as mp
-import models
-import math
-import torch
-import time
+import random
 import numpy as np
+import torch
+import math
+import time
 import os
+import cv2
+
+import models
 import config
 import models
 import utils
 import middlebury
-import cv2
 
 settings = config.Config()
 
@@ -89,6 +91,18 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
     target = torch.linspace(1.0, 1.0, dtype=torch.float, steps=int(2*batch_size), device=device)
 
     time_start = time.time()
+
+    plt.ion()
+    fig = plt.figure()
+
+    x_epoch = list()
+    y_loss = list()
+
+    def make_fig():
+        plt.title('Stereo')
+        plt.ylabel('Loss')
+        plt.xlabel('Epochs')
+        plt.plot(x_epoch, y_loss)
 
     for epoch in range(0, epochs_number):
         net.train()
@@ -185,6 +199,10 @@ def train(batch_size, epochs_number, device, dataset_neg_low=2.5, dataset_neg_hi
 
         torch.save(net.state_dict(), '{}trainedweight{}.pth'.format(weight_path, epoch))
         print('epoch\t%d loss:\t%.23f time lapsed:\t%.2f s' % (epoch, (err_tr/err_tr_cnt), time.time() - time_start))
+
+        x_epoch.append(epoch)
+        y_loss.append((err_tr/err_tr_cnt))
+        drawnow(make_fig)
 
 if __name__ == "__main__":
     print("Training CNN...")

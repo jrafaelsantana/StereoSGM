@@ -83,6 +83,7 @@ else:
     print('Weights not found')
     sys.exit()
 
+weights, bias = utils.getWeights(net, 'full')
 
 def compute_costs(left, right, max_disparity, patch_height, patch_width, channel_number, device, one_window_net):
     """

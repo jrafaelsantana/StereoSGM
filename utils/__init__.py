@@ -3,3 +3,4 @@ from .files import load_pfm, save_obj, load_obj, parseCalib, saveDisparity, writ
 from .distances import hamming_distance
 from .path import get_path_cost, get_indices
 from .augumentation import generate_patch, make_patch_cv2, fill, horizontal_flip, vertical_flip, horizontal_shift, vertical_shift, brightness, zoom, channel_shift, rotation, make_patch
+from .weights import getWeights
